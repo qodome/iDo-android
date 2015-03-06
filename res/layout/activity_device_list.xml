@@ -9,10 +9,30 @@
     android:background="@color/iDoWhite"
     android:orientation="vertical">
     
+    <TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:text="Connected Device"
+        	android:gravity="left"/>
+        
     <ListView 
-        android:id="@+id/device_list"
+        android:id="@+id/device_list_connected"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:clickable="true">
+    </ListView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Available Device"
+        android:gravity="left"/>
+        
+    <ListView 
+        android:id="@+id/device_list_available"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true">
     </ListView>
     
 </LinearLayout>

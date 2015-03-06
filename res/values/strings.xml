@@ -1,8 +1,11 @@
 <resources>
-
     <string name="app_name">iDo Smart</string>
     <string name="LOGTAG">iDoSmart</string>
-	<string name="ACTION_REQ_DEV_LIST">com.qodome.idosmart.ACTION_REQ_DEV_LIST</string>
-	<string name="ACTION_RSP_DEV_LIST">com.qodome.idosmart.ACTION_RSP_DEV_LIST</string>
+	<string name="ACTION_REQ_DEV_LIST_AVAILABLE">com.qodome.idosmart.ACTION_REQ_DEV_LIST_AVAILABLE</string>
+	<string name="ACTION_RSP_DEV_LIST_AVAILABLE">com.qodome.idosmart.ACTION_RSP_DEV_LIST_AVAILABLE</string>
+	<string name="ACTION_REQ_DEV_LIST_CONNECTED">com.qodome.idosmart.ACTION_REQ_DEV_LIST_CONNECTED</string>
+	<string name="ACTION_RSP_DEV_LIST_CONNECTED">com.qodome.idosmart.ACTION_RSP_DEV_LIST_CONNECTED</string>
+	<string name="ACTION_STOP_SCAN">com.qodome.idosmart.ACTION_STOP_SCAN</string>
+	<string name="ACTION_CONNECT_TO_DEVICE">com.qodome.idosmart.ACTION_CONNECT_TO_DEVICE</string>	
 	<string name="ACTION_EXTRA">com.qodome.idosmart.ACTION_EXTRA</string>
 </resources>
