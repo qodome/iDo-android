@@ -33,6 +33,7 @@ import android.content.DialogInterface
     	BLEService.ddActivity = this
     	
     	devDetailHead = new ArrayList<DevDetailElement>()
+    	devDetailContent = new ArrayList<DevDetailElement>()
     	var devElem = new DevDetailElement()
     	devElem.deviceDetailKey = "Name"
     	devElem.deviceDetailValue = BLEService.mDevice?.getName()
@@ -101,7 +102,39 @@ import android.content.DialogInterface
             		})
     			}	
     		}
-    		
+    		BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_SERIAL_NUMBER_STRING)
+    	}  else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_SERIAL_NUMBER_STRING)) {
+    		if (status == 0) {
+    			runOnUiThread[
+    			var devElem = new DevDetailElement()
+    			devElem.deviceDetailKey = "Serial Number"
+    			devElem.deviceDetailValue = new String(characteristic.getValue())
+    			devDetailContent.add(devElem)
+    			deviceDetailContents.adapter = new BeanAdapter<DevDetailElement>(this, R.layout.element_device_detail, devDetailContent)
+    			]
+    		}
+    		BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_SOFTWARE_REVISION_STRING)
+    	}  else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_SOFTWARE_REVISION_STRING)) {
+    		if (status == 0) {
+    			runOnUiThread[
+    			var devElem = new DevDetailElement()
+    			devElem.deviceDetailKey = "Software Revision"
+    			devElem.deviceDetailValue = new String(characteristic.getValue())
+    			devDetailContent.add(devElem)
+    			deviceDetailContents.adapter = new BeanAdapter<DevDetailElement>(this, R.layout.element_device_detail, devDetailContent)
+    			]
+    		}
+    		BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_MANUFACTURER_NAME_STRING)
+    	}  else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_MANUFACTURER_NAME_STRING)) {
+    		if (status == 0) {
+    			runOnUiThread[
+    			var devElem = new DevDetailElement()
+    			devElem.deviceDetailKey = "Manufacture"
+    			devElem.deviceDetailValue = new String(characteristic.getValue())
+    			devDetailContent.add(devElem)
+    			deviceDetailContents.adapter = new BeanAdapter<DevDetailElement>(this, R.layout.element_device_detail, devDetailContent)
+    			]
+    		}
     	}
     }
 }
