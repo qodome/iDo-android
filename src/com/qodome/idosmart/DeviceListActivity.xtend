@@ -62,7 +62,7 @@ import android.widget.AdapterView
 				devListConnectedInfo = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
 				deviceListConnected.setOnItemClickListener(new OnItemClickListener() {
           			override onItemClick(AdapterView<?> parent, View view, int position, long id) {
-						Log.i(getString(R.string.LOGTAG), "onItemClick " + position)
+						startActivity(new Intent(devListActivity, typeof(DeviceDetailActivity)))
               		}
             	})
 			} 

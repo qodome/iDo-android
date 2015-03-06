@@ -39,9 +39,10 @@ import java.lang.StringBuilder
 class BLEService extends IntentService {
 	var BluetoothManager mBluetoothManager
     var BluetoothAdapter mBluetoothAdapter
-    static var BluetoothDevice mDevice
-    static var BluetoothGatt mGatt    
-    static var Map<String, BluetoothDevice> mScanDevMap
+    static public var BluetoothDevice mDevice
+    static public var BluetoothGatt mGatt    
+    static public var Map<String, BluetoothDevice> mScanDevMap
+    static public var DeviceDetailActivity ddActivity
     var String folderName
     var List<ScanFilter> crmFilterList
     var ScanSettings crmScanSetting
@@ -138,6 +139,7 @@ class BLEService extends IntentService {
         mBluetoothAdapter = mBluetoothManager?.getAdapter()
         mDevice = null
         mGatt = null
+        ddActivity = null
         mScanStarted = false
         mTriggerMonitorStart = false
         mScanDevMap = new HashMap<String, BluetoothDevice>()

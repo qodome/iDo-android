@@ -2,6 +2,9 @@ package com.qodome.idosmart;
 
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.lang.Math;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class Utils {
 	public static byte[] getCalendarTime() {
@@ -22,4 +25,23 @@ public class Utils {
         t[6] = (byte)second;
         return t;
 	}
+	
+	public static double round(double value, int places) {
+	    if (places < 0) throw new IllegalArgumentException();
+
+	    BigDecimal bd = new BigDecimal(value);
+	    bd = bd.setScale(places, RoundingMode.HALF_UP);
+	    return bd.doubleValue();
+	}
+	
+	public static double getTempC(byte[] b) {
+		double d = 0.0;
+		int i = 0;
+		
+		i = b[3] * 256 * 256 + b[2] * 256 + b[1];
+		d = (double)i / 10000.0;
+		return round(d, 1);
+	}
+	
+	
 }

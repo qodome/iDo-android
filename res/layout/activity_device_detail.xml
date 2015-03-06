@@ -9,4 +9,18 @@
     android:background="@color/iDoWhite"
     android:orientation="vertical">
 
+    <ListView 
+        android:id="@+id/device_detail_head"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true">
+    </ListView>
+    
+    <ListView 
+        android:id="@+id/device_detail_contents"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="false">
+    </ListView>
+    
 </LinearLayout>
