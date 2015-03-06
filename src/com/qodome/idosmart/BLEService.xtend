@@ -223,7 +223,7 @@ class BLEService extends IntentService {
         override onCharacteristicRead(BluetoothGatt gatt,
                 						BluetoothGattCharacteristic characteristic,
                 						int status) {
-                	
+        	ddActivity?.readCallback(status, characteristic)
         }
         
         override onCharacteristicChanged(BluetoothGatt gatt,
@@ -279,6 +279,7 @@ class BLEService extends IntentService {
         	Log.i("iDoSmart", "write char")
         	mGatt?.writeCharacteristic(gattChar)
         }
+        // FIXME: add timeout check
     }
     
     def static readCharacteristic(String serviceUuid, String charUuid) {
@@ -290,7 +291,9 @@ class BLEService extends IntentService {
         gattService = mGatt?.getService(UUID.fromString(serviceUuid))
         gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         if (gattChar != null) {
+        	Log.i("iDoSmart", "read char")
         	mGatt?.readCharacteristic(gattChar)        	
         }
+        // FIXME: add timeout check
     }
 }

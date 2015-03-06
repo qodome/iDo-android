@@ -1,5 +1,7 @@
 package com.qodome.idosmart
 
-class OADActivity {
+import org.xtendroid.app.AndroidActivity
+
+@AndroidActivity(R.layout.activity_oad) class OADActivity {
 	
 }
