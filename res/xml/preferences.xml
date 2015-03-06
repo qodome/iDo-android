@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:key="low_temp_notify"
+        android:title="@string/low_temp_notify"
+        android:summary="@string/low_temp_notify_sum"
+        android:defaultValue="false"/>
+    
+    <net.jayschwa.android.preference.SliderPreference
+    	android:key="low_temp_notify_value"
+    	android:title="@string/low_temp_notify_value_title"
+    	android:summary="@string/low_temp_notify_value_summaries"
+    	android:defaultValue="@string/low_temp_notify_value_default"
+    	android:dialogMessage="@string/low_temp_notify_value_message"
+    	android:dependency="low_temp_notify"/>
+    
+    <CheckBoxPreference
+        android:key="high_temp_notify"
+        android:title="@string/high_temp_notify"
+        android:summary="@string/high_temp_notify_sum"
+        android:defaultValue="true"/>
+    
+    <net.jayschwa.android.preference.SliderPreference
+    	android:key="high_temp_notify_value"
+    	android:title="@string/high_temp_notify_value_title"
+    	android:summary="@string/high_temp_notify_value_summaries"
+    	android:defaultValue="@string/high_temp_notify_value_default"
+    	android:dialogMessage="@string/high_temp_notify_value_message"
+    	android:dependency="high_temp_notify"/>
+    
+    <MultiSelectListPreference
+        android:key="temp_unit_selection"
+        android:title="@string/temp_unit_selection_title"
+        android:dialogTitle="@string/temp_unit_selection_dialogtitle"        
+        android:summary="@string/temp_unit_selection_summary"        
+        android:entries="@array/temp_unit_selection_entries"
+        android:entryValues="@array/temp_unit_selection_entryvalues"
+        android:defaultValue="@array/temp_unit_default"/>
+        
+</PreferenceScreen>

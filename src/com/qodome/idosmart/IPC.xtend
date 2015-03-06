@@ -7,8 +7,9 @@ import org.xtendroid.parcel.AndroidParcelable
 class IPC {
     public List<String> devAddr
     public List<String> devName 
+    public byte[] data
 
     override toString() {
-        '''«devAddr», «devName»'''
+        '''«devAddr», «devName», «data»'''
     }
 }

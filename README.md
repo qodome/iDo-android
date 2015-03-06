@@ -8,3 +8,5 @@ https://eclipse.org/xtend/download.html
 2. Xtendroid
 https://github.com/tobykurien/Xtendroid
 
+3. AndroidSliderPreference
+https://github.com/jayschwa/AndroidSliderPreference

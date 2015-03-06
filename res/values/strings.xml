@@ -6,6 +6,41 @@
 	<string name="ACTION_REQ_DEV_LIST_CONNECTED">com.qodome.idosmart.ACTION_REQ_DEV_LIST_CONNECTED</string>
 	<string name="ACTION_RSP_DEV_LIST_CONNECTED">com.qodome.idosmart.ACTION_RSP_DEV_LIST_CONNECTED</string>
 	<string name="ACTION_STOP_SCAN">com.qodome.idosmart.ACTION_STOP_SCAN</string>
-	<string name="ACTION_CONNECT_TO_DEVICE">com.qodome.idosmart.ACTION_CONNECT_TO_DEVICE</string>	
+	<string name="ACTION_CONNECT_TO_DEVICE">com.qodome.idosmart.ACTION_CONNECT_TO_DEVICE</string>
+	<string name="ACTION_UPDATE_TEMP">com.qodome.idosmart.ACTION_UPDATE_TEMP</string>
 	<string name="ACTION_EXTRA">com.qodome.idosmart.ACTION_EXTRA</string>
+    
+    <string name="low_temp_notify">low_temp_notify</string>
+    <string name="low_temp_notify_sum">low_temp_notify_sum</string>
+    <string name="low_temp_notify_value_title">low_temp_notify_value_title</string>
+    <string name="low_temp_notify_value_summaries">low_temp_notify_value_summaries</string>
+    <item name="low_temp_notify_value_default" format="float" type="string">0.5</item>
+    <string name="low_temp_notify_value_message">low_temp_notify_value_message</string>
+
+    <string name="high_temp_notify">high_temp_notify</string>
+    <string name="high_temp_notify_sum">high_temp_notify_sum</string>
+    <string name="high_temp_notify_value_title">high_temp_notify_value_title</string>
+    <string name="high_temp_notify_value_summaries">high_temp_notify_value_summaries</string>
+    <item name="high_temp_notify_value_default" format="float" type="string">0.5</item>
+    <string name="high_temp_notify_value_message">high_temp_notify_value_message</string>
+
+	<string-array name="temp_unit_selection_entries">
+        <item>oC</item>
+        <item>oF</item>
+        <item>K</item>
+    </string-array>
+	<string-array name="temp_unit_selection_entryvalues">
+        <item>oC_value</item>
+        <item>oF_value</item>
+        <item>K_value</item>
+    </string-array>
+    <string-array name="temp_unit_default">
+        <item>oC_value</item>
+    </string-array>
+    <string name="temp_unit_selection_title">temp_unit_selection_title</string>
+    <string name="temp_unit_selection_dialogtitle">temp_unit_selection_dialogtitle</string>
+    <string name="temp_unit_selection_summary">temp_unit_selection_summary</string>
+    
+    
+    
 </resources>

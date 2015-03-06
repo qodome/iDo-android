@@ -88,11 +88,6 @@ class BLEService extends IntentService {
                 mGatt?.close()
                 mGatt = null
                 mDevice = null
-                
-                if (mScanStarted == true) {
-					mScanStarted = false
-					mBluetoothAdapter?.getBluetoothLeScanner().stopScan(mLeScanCallback)					
-				}
 				
 				var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
 				connect(p.devAddr.get(0))
@@ -231,13 +226,10 @@ class BLEService extends IntentService {
         
         override onCharacteristicChanged(BluetoothGatt gatt,
         								BluetoothGattCharacteristic characteristic) {
-        	Log.i(getString(R.string.LOGTAG), "onCharacteristicChanged")
         	if (characteristic.getUuid().toString().equals(GATTConstants.BLE_INTERMEDIATE_TEMPERATURE)) {
-        		var sb = new StringBuilder(characteristic.getValue().length * 3)
-        		for (byte b: characteristic.getValue()) {
-        			sb.append(String.format("%02x ", b));
-        		}
-        		Log.i(getString(R.string.LOGTAG), "Notification 0x2A1E: " + sb.toString());
+        		var p = new IPC
+				p.data = characteristic.getValue()
+				sendBroadcast(new Intent(getString(R.string.ACTION_UPDATE_TEMP)).putExtra(getString(R.string.ACTION_EXTRA), p))
         	}
         }
     }
