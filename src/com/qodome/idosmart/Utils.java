@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public class Utils {
+	public static byte[] bytes;
+	
 	public static byte[] getCalendarTime() {
         Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC")); 
         int year = c.get(Calendar.YEAR);
@@ -43,5 +45,15 @@ public class Utils {
 		return round(d, 1);
 	}
 	
+	public static byte[] parepareBlock(int idx, byte[] b) {
+		byte[] c = new byte[2 + b.length];
+		c[0] = (byte)(idx & 0xFF);
+		c[1] = (byte)((idx & 0xFF00) >> 8);
+		System.arraycopy(b, 0, c, 2, b.length);
+		return c;
+	}
 	
+	public static int getWriteIdx(byte[] b) {
+		return ((int)b[1] << 8) | (int)b[0];
+	}
 }

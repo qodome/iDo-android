@@ -200,6 +200,7 @@ class BLEService extends IntentService {
                 	connect(mDevice.getAddress())
                 }
             }
+            oadService?.onConnectionStatusChanged(newState)
         }
 
         override onServicesDiscovered(BluetoothGatt gatt, int status) {
@@ -235,6 +236,8 @@ class BLEService extends IntentService {
         		var p = new IPC
 				p.data = characteristic.getValue()
 				sendBroadcast(new Intent(getString(R.string.ACTION_UPDATE_TEMP)).putExtra(getString(R.string.ACTION_EXTRA), p))
+        	} else {
+        		oadService?.onCharacteristicChanged(characteristic) 
         	}
         }
     }
@@ -246,7 +249,7 @@ class BLEService extends IntentService {
     	Log.i(getString(R.string.LOGTAG), "startMonitorTemp")
     }
     
-    def setCharacteristicNotification(String serviceUuid, String charUuid,
+    def static setCharacteristicNotification(String serviceUuid, String charUuid,
                                               boolean enabled) {
         var BluetoothGattService gattService = null
         var BluetoothGattCharacteristic gattChar = null
@@ -263,7 +266,7 @@ class BLEService extends IntentService {
         if (descriptor != null) {
         	mGatt?.writeDescriptor(descriptor)
         	if (gattChar != null) {
-        		Log.i(getString(R.string.LOGTAG), "set notify")
+        		Log.i("iDoSmart", "set notify")
         		mGatt?.setCharacteristicNotification(gattChar, enabled)
         	}
         }
@@ -279,11 +282,25 @@ class BLEService extends IntentService {
         gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         gattChar?.setValue(data)
         if (gattChar != null) {
-        	Log.i("iDoSmart", "write char")
         	mGatt?.writeCharacteristic(gattChar)
         }
         // FIXME: add timeout check
         // FIXME: multiple requests shall be queued!
+    }
+    
+    def static writeCharacteristicWithoutRsp(String serviceUuid, String charUuid, byte[] data) {
+        var BluetoothGattService gattService = null
+        var BluetoothGattCharacteristic gattChar = null
+        
+        gattService = mGatt?.getService(UUID.fromString(serviceUuid))
+        gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
+        gattService = mGatt?.getService(UUID.fromString(serviceUuid))
+        gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
+        gattChar?.setValue(data)
+        gattChar?.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+        if (gattChar != null) {
+        	mGatt?.writeCharacteristic(gattChar)
+        }
     }
     
     def static readCharacteristic(String serviceUuid, String charUuid) {

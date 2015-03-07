@@ -4,6 +4,12 @@ import android.app.IntentService
 import android.util.Log
 import android.content.Intent
 import android.bluetooth.BluetoothGattCharacteristic
+import java.io.InputStream
+import com.google.common.io.ByteStreams
+import java.util.Arrays
+import android.bluetooth.BluetoothProfile
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
 
 class OADService extends IntentService {
 	enum OADStatus {
@@ -11,10 +17,23 @@ class OADService extends IntentService {
 		ALREADY_LATEST,
 		NOT_SUPPORTED,
 		DO_UPDATE_WITH_A,
-		DO_UPDATE_WITH_B
+		DO_UPDATE_WITH_B,
+		WAITING,
+		OADING,
+		DISCONNECTED_AFTER_OAD,
+		CHECK_OAD_RESULT,
+		SUCCESS,
+		FAIL
 	}
 
 	var OADStatus status
+	var int sleepCnt
+	var int notifyIdCnt
+	var int writeIdx
+	var int blockCntDown
+	var int sleepPeriod
+	val blockCount = 7808 // 0x1E80
+	var Lock l
 	public static var String currentVersion = null
 	public static var String targetVersion = null
 	public static var String oadStatus = null
@@ -30,6 +49,10 @@ class OADService extends IntentService {
     	currentVersion = null
     	targetVersion = null
     	oadStatus = null
+    	notifyIdCnt = 0
+    	writeIdx = 0
+    	blockCntDown = 0
+    	l = new ReentrantLock()
         Log.i(getString(R.string.LOGTAG), "OADService created")
     }
     
@@ -71,8 +94,14 @@ class OADService extends IntentService {
     	Log.i(getString(R.string.LOGTAG), "OADService onHandleIntent got started")
     	
     	BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_FIRMWARE_REVISION_STRING)
+    	sleepCnt = 0
     	while (status == OADStatus.WAIT_ON_FV) {
-    		waitMillis(100)
+    		sleepCnt++
+    		if (sleepCnt > 10) {
+    			sendStatusUpdate("Timeout")
+    			return
+    		}
+    		waitMillis(1000)
     	}
     	
     	Log.i(getString(R.string.LOGTAG), "OADService onHandleIntent check status")
@@ -93,28 +122,167 @@ class OADService extends IntentService {
     		return
     	}
     	
-    	while (true) {
-    		waitMillis(100)
+    	var InputStream is = null
+    	if (status == OADStatus.DO_UPDATE_WITH_A) {
+    		is = getResources().openRawResource(R.raw.img_a_03_101)
+    	} else {
+    		is = getResources().openRawResource(R.raw.img_b_03_101)
+    	}
+
+		// Prepare raw meat
+    	Utils.bytes = ByteStreams.toByteArray(is)
+    	
+    	// Enable OAD notifications
+    	BLEService.setCharacteristicNotification(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_IDENTIFY, true)
+    	waitMillis(100)
+    	BLEService.setCharacteristicNotification(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_BLOCK, true)
+    	waitMillis(100)
+    	
+    	// Trigger OAD start
+    	BLEService.writeCharacteristic(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_IDENTIFY, Arrays.copyOfRange(Utils.bytes, 4, 12))    	
+    	status = OADStatus.WAITING
+    	sleepCnt = 0
+    	while (status == OADStatus.WAITING) {
+    		sleepCnt++
+    		if (sleepCnt > 20) {
+    			sendStatusUpdate("Timeout")
+    			return
+    		}
+    		waitMillis(1000)
     	}
     	
+    	if (status == OADStatus.NOT_SUPPORTED) {
+    		sendStatusUpdate("Not Supported")
+    		return    		
+    	}
+    	
+    	var boolean loopCheck = true
+    	while (loopCheck) {
+    		l.lock()
+    		val next = writeIdx
+            if (next < blockCount) {
+                writeIdx++
+            }
+            l.unlock()
+            if (blockCntDown > 0) {
+                blockCntDown--
+                sleepPeriod = 500
+            } else {
+                sleepPeriod = 50
+            }
+            if (next < blockCount) {
+                sleepCnt = 0
+                BLEService.writeCharacteristicWithoutRsp(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_BLOCK, Utils.parepareBlock(next, Arrays.copyOfRange(Utils.bytes, (16 * next), (16 * next + 16))))
+                if (next % 78 == 0) {
+                    val percent = next / 78
+                    sendStatusUpdate(percent + "%")
+                }
+                waitMillis(sleepPeriod)
+            } else {
+                if (status == OADStatus.DISCONNECTED_AFTER_OAD || status == OADStatus.CHECK_OAD_RESULT) {
+                    loopCheck = false
+                }
+                // Disconnect check
+                waitMillis(1000)
+                sleepCnt++
+                if (sleepCnt > 60) {
+                    sendStatusUpdate("Timeout")
+    				return
+                }
+            }
+    	}
+    	
+    	sleepCnt = 0
+        while (status == OADStatus.DISCONNECTED_AFTER_OAD) {
+            waitMillis(1000)
+            sleepCnt++
+            if (sleepCnt > 20) {
+                sendStatusUpdate("Timeout")
+    			return
+            }
+        }
+        if (status != OADStatus.CHECK_OAD_RESULT) {
+            sendStatusUpdate("Timeout")
+    		return
+        }
+        // Wait 2 seconds to allow service discovery
+        waitMillis(2000)
+        BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_FIRMWARE_REVISION_STRING)
+    	
+    	sleepCnt = 0
+        while (status == OADStatus.CHECK_OAD_RESULT) {
+            waitMillis(1000)
+            sleepCnt++
+            if (sleepCnt > 20) {
+                sendStatusUpdate("Timeout")
+    			return
+            }
+        }
+        if (status == OADStatus.SUCCESS) {
+        	sendStatusUpdate("SUCCESS")
+        } else {
+        	sendStatusUpdate("FAIL")
+        }
     }
+	
+	public def onConnectionStatusChanged(int newState) {
+		if (newState == BluetoothProfile.STATE_CONNECTED) {
+			if (status == OADStatus.DISCONNECTED_AFTER_OAD) {
+				status = OADStatus.CHECK_OAD_RESULT
+			}
+		} else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+			l.lock()
+			if (writeIdx >= blockCount && status == OADStatus.OADING) {
+                Log.i(getString(R.string.LOGTAG), "Device disconnected after OAD")
+                status = OADStatus.DISCONNECTED_AFTER_OAD
+            }
+            l.unlock()
+		}
+	}
+	
+	public def onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
+		if (characteristic.getUuid().toString().equals(GATTConstants.BLE_IDO1_OAD_IDENTIFY)) {
+			notifyIdCnt++
+			if (notifyIdCnt > 5) {
+				status = OADStatus.NOT_SUPPORTED
+				return
+			}
+			BLEService.writeCharacteristic(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_IDENTIFY, Arrays.copyOfRange(Utils.bytes, 4, 12))
+		} else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_IDO1_OAD_BLOCK)) {
+			status = OADStatus.OADING
+			l.lock()
+			Log.i(getString(R.string.LOGTAG), "writeIdx " + writeIdx + " to " + Utils.getWriteIdx(characteristic.getValue()))
+			writeIdx = Utils.getWriteIdx(characteristic.getValue())
+			l.unlock()
+			blockCntDown = 10
+			Log.i(getString(R.string.LOGTAG), "get block notification update")          
+		}
+	}
 	
 	public def readCallback(int status, BluetoothGattCharacteristic characteristic) {
 		Log.i(getString(R.string.LOGTAG), "OADService readCallback status: " + status + " " + characteristic.getUuid().toString())
     	if (characteristic.getUuid().toString().equals(GATTConstants.BLE_FIRMWARE_REVISION_STRING)) {
     		if (status == 0) {
-    			currentVersion = new String(characteristic.getValue())
-    			if (getString(R.string.IMG_1_0_1_03_A).equals(new String(characteristic.getValue())) ||
-    				getString(R.string.IMG_1_0_1_03_B).equals(new String(characteristic.getValue()))) {
-    				status = OADStatus.ALREADY_LATEST
-    			} else {
-    				var str = new String(characteristic.getValue())
-    				if (str.contains("A")) {
-    					status = OADStatus.DO_UPDATE_WITH_B
+    			if (status != OADStatus.CHECK_OAD_RESULT) {
+    				currentVersion = new String(characteristic.getValue())
+    				if (getString(R.string.IMG_1_0_1_03_A).equals(new String(characteristic.getValue())) ||
+    					getString(R.string.IMG_1_0_1_03_B).equals(new String(characteristic.getValue()))) {
+    					status = OADStatus.ALREADY_LATEST
     				} else {
-    					status = OADStatus.DO_UPDATE_WITH_A
+    					var str = new String(characteristic.getValue())
+    					if (str.contains("A")) {
+    						status = OADStatus.DO_UPDATE_WITH_B
+    					} else {
+    						status = OADStatus.DO_UPDATE_WITH_A
+    					}  				
+    				}    				
+    			} else {
+    				if (getString(R.string.IMG_1_0_1_03_A).equals(new String(characteristic.getValue())) ||
+    					getString(R.string.IMG_1_0_1_03_B).equals(new String(characteristic.getValue()))) {
+    					status = OADStatus.SUCCESS
+    				} else {
+    					status = OADStatus.FAIL
     				}
-    				
     			}
     		} else {
     			// Not Supported
