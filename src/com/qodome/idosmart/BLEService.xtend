@@ -207,6 +207,11 @@ class BLEService extends IntentService {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 mGatt = gatt
                 mTriggerMonitorStart = true
+                /*
+                for (BluetoothGattService service: gatt.getServices()) {
+                	Log.i(getString(R.string.LOGTAG), service.getUuid().toString())
+                }
+                */
             } else {
                 Log.w(getString(R.string.LOGTAG), "onServicesDiscovered failed")
                 gatt.disconnect()
@@ -219,8 +224,7 @@ class BLEService extends IntentService {
         
         override onCharacteristicWrite(BluetoothGatt gatt,
                                       	BluetoothGattCharacteristic characteristic,
-                                        int status) {
-        	Log.i(getString(R.string.LOGTAG), "onCharacteristicWrite")                    	
+                                        int status) {                  	
         }
 
         override onCharacteristicRead(BluetoothGatt gatt,
@@ -266,7 +270,6 @@ class BLEService extends IntentService {
         if (descriptor != null) {
         	mGatt?.writeDescriptor(descriptor)
         	if (gattChar != null) {
-        		Log.i("iDoSmart", "set notify")
         		mGatt?.setCharacteristicNotification(gattChar, enabled)
         	}
         }

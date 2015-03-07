@@ -131,12 +131,12 @@ class OADService extends IntentService {
 
 		// Prepare raw meat
     	Utils.bytes = ByteStreams.toByteArray(is)
-    	
+    	    	
     	// Enable OAD notifications
     	BLEService.setCharacteristicNotification(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_IDENTIFY, true)
-    	waitMillis(100)
+    	waitMillis(1000)
     	BLEService.setCharacteristicNotification(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_BLOCK, true)
-    	waitMillis(100)
+    	waitMillis(1000)
     	
     	// Trigger OAD start
     	BLEService.writeCharacteristic(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_IDENTIFY, Arrays.copyOfRange(Utils.bytes, 4, 12))    	
@@ -168,7 +168,7 @@ class OADService extends IntentService {
                 blockCntDown--
                 sleepPeriod = 500
             } else {
-                sleepPeriod = 50
+                sleepPeriod = 10
             }
             if (next < blockCount) {
                 sleepCnt = 0
@@ -249,6 +249,12 @@ class OADService extends IntentService {
 			}
 			BLEService.writeCharacteristic(GATTConstants.BLE_IDO1_OAD_SERVICE, GATTConstants.BLE_IDO1_OAD_IDENTIFY, Arrays.copyOfRange(Utils.bytes, 4, 12))
 		} else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_IDO1_OAD_BLOCK)) {
+			var sb = new StringBuilder(characteristic.getValue().length * 3)
+        	for (byte b: characteristic.getValue()) {
+        		sb.append(String.format("%02x ", b));
+        	}
+        	Log.i(getString(R.string.LOGTAG), "OADBlock got Notification: " + sb.toString());
+			
 			status = OADStatus.OADING
 			l.lock()
 			Log.i(getString(R.string.LOGTAG), "writeIdx " + writeIdx + " to " + Utils.getWriteIdx(characteristic.getValue()))
@@ -259,10 +265,9 @@ class OADService extends IntentService {
 		}
 	}
 	
-	public def readCallback(int status, BluetoothGattCharacteristic characteristic) {
-		Log.i(getString(R.string.LOGTAG), "OADService readCallback status: " + status + " " + characteristic.getUuid().toString())
+	public def readCallback(int retStatus, BluetoothGattCharacteristic characteristic) {
     	if (characteristic.getUuid().toString().equals(GATTConstants.BLE_FIRMWARE_REVISION_STRING)) {
-    		if (status == 0) {
+    		if (retStatus == 0) {
     			if (status != OADStatus.CHECK_OAD_RESULT) {
     				currentVersion = new String(characteristic.getValue())
     				if (getString(R.string.IMG_1_0_1_03_A).equals(new String(characteristic.getValue())) ||
@@ -275,12 +280,15 @@ class OADService extends IntentService {
     					} else {
     						status = OADStatus.DO_UPDATE_WITH_A
     					}  				
-    				}    				
+    				}
     			} else {
+    				Log.i(getString(R.string.LOGTAG), new String(characteristic.getValue()))
     				if (getString(R.string.IMG_1_0_1_03_A).equals(new String(characteristic.getValue())) ||
     					getString(R.string.IMG_1_0_1_03_B).equals(new String(characteristic.getValue()))) {
+    					Log.i(getString(R.string.LOGTAG), "success")
     					status = OADStatus.SUCCESS
     				} else {
+    					Log.i(getString(R.string.LOGTAG), "fail")
     					status = OADStatus.FAIL
     				}
     			}

@@ -45,7 +45,7 @@ import android.preference.PreferenceManager
         			for (byte b: p.data) {
         				sb.append(String.format("%02x ", b));
         			}
-        			Log.i(getString(R.string.LOGTAG), "MainActivity got Notification: " + sb.toString());
+        			//Log.i(getString(R.string.LOGTAG), "MainActivity got Notification: " + sb.toString());
         							
 					var tempUnit = PreferenceManager?.getDefaultSharedPreferences(selfActivity)?.getStringSet("temp_unit_selection", null)
 					var tempUnitCfg = tempUnit.get(0)
