@@ -8,6 +8,8 @@
 	<string name="ACTION_STOP_SCAN">com.qodome.idosmart.ACTION_STOP_SCAN</string>
 	<string name="ACTION_CONNECT_TO_DEVICE">com.qodome.idosmart.ACTION_CONNECT_TO_DEVICE</string>
 	<string name="ACTION_UPDATE_TEMP">com.qodome.idosmart.ACTION_UPDATE_TEMP</string>
+	<string name="ACTION_OAD_STATUS">com.qodome.idosmart.ACTION_OAD_STATUS</string>
+	<string name="ACTION_OAD_VERSION">com.qodome.idosmart.ACTION_OAD_VERSION</string>	
 	<string name="ACTION_EXTRA">com.qodome.idosmart.ACTION_EXTRA</string>
     
     <string name="low_temp_notify">low_temp_notify</string>
@@ -46,5 +48,7 @@
     <string name="temp_unit_selection_summary">temp_unit_selection_summary</string>
     
     <string name="IDO_MODEL_NAME">ID14TB</string>
+    <string name="IMG_1_0_1_03_A">1.0.1(03A)</string>
+    <string name="IMG_1_0_1_03_B">1.0.1(03B)</string>
     
 </resources>

@@ -9,4 +9,75 @@
     android:background="@color/iDoWhite"
     android:orientation="vertical">
 
+    <LinearLayout 
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="horizontal">
+    	
+		<TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:gravity="left"
+        	android:text="Current Version"/>
+
+    	<TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"/>		
+		
+		<TextView
+		    android:id="@+id/oad_current_version"
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:gravity="right"/>		
+				
+    </LinearLayout>
+
+    <LinearLayout 
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="horizontal">
+    	
+		<TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:gravity="left"
+        	android:text="Target Version"/>
+
+    	<TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"/>			
+		
+		<TextView
+		    android:id="@+id/oad_target_version"
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:gravity="right"/>		
+				
+    </LinearLayout>
+    
+    <LinearLayout 
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="horizontal">
+    	
+		<TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:gravity="left"
+        	android:text="OAD Progress"/>
+
+    	<TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"/>			
+		
+		<TextView
+		    android:id="@+id/oad_progress"
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:gravity="right"/>		
+				
+    </LinearLayout>    
 </LinearLayout>

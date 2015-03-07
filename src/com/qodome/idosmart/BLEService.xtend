@@ -43,6 +43,7 @@ class BLEService extends IntentService {
     static public var BluetoothGatt mGatt    
     static public var Map<String, BluetoothDevice> mScanDevMap
     static public var DeviceDetailActivity ddActivity
+    static public var OADService oadService
     var String folderName
     var List<ScanFilter> crmFilterList
     var ScanSettings crmScanSetting
@@ -140,6 +141,7 @@ class BLEService extends IntentService {
         mDevice = null
         mGatt = null
         ddActivity = null
+        oadService = null
         mScanStarted = false
         mTriggerMonitorStart = false
         mScanDevMap = new HashMap<String, BluetoothDevice>()
@@ -223,6 +225,7 @@ class BLEService extends IntentService {
         override onCharacteristicRead(BluetoothGatt gatt,
                 						BluetoothGattCharacteristic characteristic,
                 						int status) {
+            oadService?.readCallback(status, characteristic)    							
         	ddActivity?.readCallback(status, characteristic)
         }
         
@@ -280,6 +283,7 @@ class BLEService extends IntentService {
         	mGatt?.writeCharacteristic(gattChar)
         }
         // FIXME: add timeout check
+        // FIXME: multiple requests shall be queued!
     }
     
     def static readCharacteristic(String serviceUuid, String charUuid) {
@@ -291,9 +295,10 @@ class BLEService extends IntentService {
         gattService = mGatt?.getService(UUID.fromString(serviceUuid))
         gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         if (gattChar != null) {
-        	Log.i("iDoSmart", "read char")
+        	Log.i("iDoSmart", "read char " + charUuid)
         	mGatt?.readCharacteristic(gattChar)        	
         }
         // FIXME: add timeout check
+        // FIXME: multiple requests shall be queued!
     }
 }

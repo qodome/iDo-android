@@ -8,8 +8,11 @@ class IPC {
     public List<String> devAddr
     public List<String> devName 
     public byte[] data
+    public String oadCurrent
+    public String oadTarget
+    public String oadStatus    
 
     override toString() {
-        '''«devAddr», «devName», «data»'''
+        '''«devAddr», «devName», «data», «oadCurrent», «oadTarget», «oadStatus»'''
     }
 }

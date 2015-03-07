@@ -26,11 +26,12 @@ import android.content.DialogInterface
 	var ddActivity = this
 	var List<DevDetailElement> devDetailHead
 	var List<DevDetailElement> devDetailContent
-	
+	var boolean fvKnown
 	
 	@OnCreate
     def init(Bundle savedInstanceState) {
     	BLEService.ddActivity = this
+    	fvKnown = false
     	
     	devDetailHead = new ArrayList<DevDetailElement>()
     	devDetailContent = new ArrayList<DevDetailElement>()
@@ -75,7 +76,7 @@ import android.content.DialogInterface
     			}
     		}
     	} else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_FIRMWARE_REVISION_STRING)) {
-    		if (status == 0) {
+    		if (status == 0 && fvKnown == false) {
     			var str = new String(characteristic.getValue())
     			if (!str.substring(0, 5).equals("1.0.0")) {
     				deviceDetailHead.setOnItemClickListener(new OnItemClickListener() {
@@ -101,8 +102,11 @@ import android.content.DialogInterface
               			}
             		})
     			}	
+    		}   		
+    		if (fvKnown == false) {
+    			fvKnown = true
+    			BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_SERIAL_NUMBER_STRING)
     		}
-    		BLEService.readCharacteristic(GATTConstants.BLE_DEVICE_INFORMATION, GATTConstants.BLE_SERIAL_NUMBER_STRING)
     	}  else if (characteristic.getUuid().toString().equals(GATTConstants.BLE_SERIAL_NUMBER_STRING)) {
     		if (status == 0) {
     			runOnUiThread[
