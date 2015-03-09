@@ -35,6 +35,15 @@ import android.bluetooth.BluetoothGattDescriptor
 import java.util.Calendar
 import java.util.TimeZone
 import java.lang.StringBuilder
+import android.app.Notification
+import org.json.JSONArray
+import com.google.common.io.CharStreams
+import java.io.InputStreamReader
+import java.io.InputStream
+import com.google.common.base.Charsets
+import java.io.FileInputStream
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
 
 class BLEService extends IntentService {
 	var BluetoothManager mBluetoothManager
@@ -49,6 +58,14 @@ class BLEService extends IntentService {
     var ScanSettings crmScanSetting
     var boolean mScanStarted
     var boolean mTriggerMonitorStart
+    var long mPeriodStart
+    var double mPeriodTempStart
+    var double mPeriodTempMax
+    var double mPeriodTempMin
+    var double mPeriodTempLast
+    var boolean mPeriodTempValid
+    var JSONArray mTempJson
+    var Lock mLock
     
     var ScanCallback mLeScanCallback =
             new ScanCallback() {
@@ -144,11 +161,25 @@ class BLEService extends IntentService {
         oadService = null
         mScanStarted = false
         mTriggerMonitorStart = false
+        mPeriodStart = 0
+        mPeriodTempStart = 0.0
+        mPeriodTempMax = 0.0
+        mPeriodTempMin = 0.0
+		mPeriodTempLast = 0.0
+		mPeriodTempValid = false
+		mLock = new ReentrantLock()
         mScanDevMap = new HashMap<String, BluetoothDevice>()
         crmFilterList = new ArrayList<ScanFilter>()
         crmFilterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString("00001809-0000-1000-8000-00805f9b34fb")).build())
         crmScanSetting = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
-        Log.i(getString(R.string.LOGTAG), "BLEService created")
+        
+        var note = new Notification( 0, null, System.currentTimeMillis())
+    	note.flags = Notification.FLAG_NO_CLEAR
+    	startForeground(42, note)
+    	
+		mTempJson = new JSONArray()
+		
+		Log.i(getString(R.string.LOGTAG), "BLEService created")        
     }
 	
 	override onDestroy() {
@@ -170,9 +201,30 @@ class BLEService extends IntentService {
     }
     
 	override onHandleIntent(Intent intent) {                
-    	Log.i(getString(R.string.LOGTAG), "onHandleIntent got intent")
+    	Log.i(getString(R.string.LOGTAG), "onHandleIntent got intent")    	
+    	mPeriodStart = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000L
+    	mPeriodStart = (mPeriodStart / 300) * 300
+
     	while (true) {
-    		waitMillis(50)
+    		val timeNow = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000L 
+        	if ((timeNow - mPeriodStart) >= 300) {
+        		mLock.lock()
+        		if (mPeriodTempValid == true) {
+        			mTempJson.put(new JSONArray("[" + mPeriodStart + "," + mPeriodTempStart + "," + mPeriodTempMax + "," + mPeriodTempMin + "," + mPeriodTempLast + "]"))
+        		} else {
+        			mTempJson.put(new JSONArray("[" + mPeriodStart + ",null,null,null,null]"))
+        		}
+        		mPeriodTempValid = false
+        		mPeriodStart += 300
+        		// Dump data now
+        		if (mTempJson.length() >= 12) {
+        			dumpJsonArray(mTempJson)
+        			mTempJson = new JSONArray()
+        		}
+        		mLock.unlock()
+        	}
+    		
+    		waitMillis(1000)
     		if (mTriggerMonitorStart == true) {
     			mTriggerMonitorStart = false
     			startMonitorTemp()
@@ -239,11 +291,32 @@ class BLEService extends IntentService {
         	if (characteristic.getUuid().toString().equals(GATTConstants.BLE_INTERMEDIATE_TEMPERATURE)) {
         		var p = new IPC
 				p.data = characteristic.getValue()
-				sendBroadcast(new Intent(getString(R.string.ACTION_UPDATE_TEMP)).putExtra(getString(R.string.ACTION_EXTRA), p))
+				sendBroadcast(new Intent(getString(R.string.ACTION_UPDATE_TEMP)).putExtra(getString(R.string.ACTION_EXTRA), p))	
+        		handleTempUpdate(characteristic.getValue())
         	} else {
         		oadService?.onCharacteristicChanged(characteristic) 
         	}
         }
+    }
+    
+    def handleTempUpdate(byte[] data) {
+    	val temp = Utils.getTempC(data)
+    	
+    	mLock.lock()        
+        if (mPeriodTempValid == false) {
+        	mPeriodTempStart = temp
+        	mPeriodTempMax = temp
+        	mPeriodTempMin = temp
+        }
+        mPeriodTempValid = true
+        mPeriodTempLast = temp
+        if (temp > mPeriodTempMax) {
+        	mPeriodTempMax = temp
+        }
+        if (temp < mPeriodTempMin) {
+        	mPeriodTempMin = temp
+        }
+        mLock.unlock()
     }
 
     def startMonitorTemp() {
@@ -320,5 +393,52 @@ class BLEService extends IntentService {
         }
         // FIXME: add timeout check
         // FIXME: multiple requests shall be queued!
+    }
+    
+    def dumpJsonArray(JSONArray jArray) {
+		var FileOutputStream reportOutput = null
+
+		var c = Calendar.getInstance()
+        var fileName = new String(c.get(Calendar.YEAR) + "_" + (c.get(Calendar.MONTH) + 1) + "_" + c.get(Calendar.DAY_OF_MONTH) + ".json")
+    	var fn = new File(folderName + fileName)
+		if (!fn.exists()) {
+			try {
+				fn.createNewFile()
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace()
+			}			
+		}
+		
+		// Read JSON from file, do the merge
+		var existingString = CharStreams.toString(new InputStreamReader(new FileInputStream(fn), Charsets.UTF_8))
+		var JSONArray existingJsonArray
+		if (existingString.length() > 0) {
+			existingJsonArray = new JSONArray(existingString)	
+		} else {
+			existingJsonArray = new JSONArray()
+		}
+		
+		for (var i = 0; i < jArray.length(); i++) {
+			existingJsonArray.put(jArray.getJSONArray(i))
+		}
+		
+		// Write merged JSON to file
+		try {
+			reportOutput = new FileOutputStream(fn)
+			if (reportOutput != null) {
+				var osw = new OutputStreamWriter(reportOutput)
+				osw.write(existingJsonArray.toString())
+				osw.flush()
+				osw.close()
+			}
+			reportOutput.close()
+		} catch (FileNotFoundException e1) {
+			// Fall through
+			e1.printStackTrace()
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace()
+		}	
     }
 }
