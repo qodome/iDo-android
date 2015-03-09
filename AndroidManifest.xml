@@ -30,9 +30,15 @@
         <activity android:name="com.qodome.idosmart.DeviceDetailActivity"/>
         <activity android:name="com.qodome.idosmart.OADActivity"/>
         <activity android:name="com.qodome.idosmart.SettingsActivity"/>    
+        <activity android:name="com.qodome.idosmart.PlotActivity"/>
         
         <service android:name="com.qodome.idosmart.BLEService" android:enabled="true"/>
         <service android:name="com.qodome.idosmart.OADService" android:enabled="true"/>
+        
+        <provider
+    		android:name="com.tyczj.extendedcalendarview.CalendarProvider"
+    		android:authorities="com.tyczj.extendedcalendarview.calendarprovider"/>
+        
     </application>
 
 </manifest>

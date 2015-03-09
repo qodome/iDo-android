@@ -36,6 +36,11 @@ import android.preference.PreferenceManager
     	startActivity(new Intent(this, typeof(DeviceListActivity)))
 	}
 
+	// Button's plot method
+	override plot(View v) {
+    	startActivity(new Intent(this, typeof(PlotActivity)))
+	}
+
 	var BroadcastReceiver mServiceActionReceiver = new BroadcastReceiver() {
 		override onReceive(Context context, Intent intent) {
 			if (intent.getAction().equals(getString(R.string.ACTION_UPDATE_TEMP))) {
