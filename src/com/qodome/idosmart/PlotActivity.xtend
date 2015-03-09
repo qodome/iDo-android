@@ -25,6 +25,11 @@ import com.github.mikephil.charting.data.LineDataSet
 import android.graphics.Color
 import com.github.mikephil.charting.utils.ColorTemplate
 import com.github.mikephil.charting.data.LineData
+import org.json.JSONArray
+import com.google.common.io.CharStreams
+import java.io.InputStreamReader
+import java.io.FileInputStream
+import com.google.common.base.Charsets
 
 @AndroidActivity(R.layout.activity_plot) class PlotActivity {
 	var ExtendedCalendarView calendar
@@ -75,11 +80,12 @@ import com.github.mikephil.charting.data.LineData
     }
     
     def plotRecord(int year, int month, int day) {
-    	var LineChart mChart
+    	var mChart =  findViewById(R.id.chart) as LineChart
     	var fn = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/iDoSmart/" +
     					year + "_" + month + "_" + day + ".json")
 		if (fn.exists()) {
-    		mChart = findViewById(R.id.chart) as LineChart
+        	val count = 24 * (60 / 5)
+        	
         	mChart.setDescription("")
         	mChart.setHighlightEnabled(true)
         	mChart.setTouchEnabled(true)
@@ -87,27 +93,53 @@ import com.github.mikephil.charting.data.LineData
         	mChart.setScaleEnabled(true)
         	mChart.setPinchZoom(false)
         	mChart.setDrawGridBackground(false)
-        	//setData(45, 100)
-        	val count = 45
-        	val range = 100
         	
        		var xVals = new ArrayList<String>();
-        	for (var i = 0; i < count; i++) {
-            	xVals.add((1990 +i) + "");
+        	for (var i = 0; i < 24; i++) {
+            	xVals.add(i + ":00")
+            	xVals.add(i + ":05")
+            	for (var j = 2; j < 12; j++) {
+            		xVals.add(i + ":" + (j * 5))
+            	
+        		}
         	}
 
         	var vals1 = new ArrayList<Entry>();
-
-        	for (var i = 0; i < count; i++) {
-            	var mult = (range + 1);
-            	var value = ((Math.random() * mult) + 20) as float
-            	vals1.add(new Entry(value, i));
-        	}
-        
-        	// create a dataset and give it a type
+        	
+        	// Read JSON from file, do the merge
+			var dataString = CharStreams.toString(new InputStreamReader(new FileInputStream(fn), Charsets.UTF_8))
+			var JSONArray dataArray
+			if (dataString.length() > 0) {
+				dataArray = new JSONArray(dataString)
+				var elem = dataArray.getJSONArray(0) as JSONArray
+				var startTime = elem.getInt(0)
+				val remain = (startTime % 86400) / 300
+				for (var i = 0; i < remain; i++) {
+            		var value = 0.0f
+            		vals1.add(new Entry(value, i));
+        		}
+        		for (var i = remain; i < (remain + dataArray.length()); i++) {
+        			var float value
+        			if (!dataArray.getJSONArray((i - remain)).isNull(1)) {
+        				value = dataArray.getJSONArray((i - remain)).getDouble(1) as float
+        			} else {
+        				value = 0.0f
+        			}
+            		vals1.add(new Entry(value, i));
+        		}
+        		for (var i = (remain + dataArray.length()); i < count; i++) {
+        			var value = 0.0f
+            		vals1.add(new Entry(value, i));
+        		}
+			} else {
+				for (var i = 0; i < count; i++) {
+            		var value = 0.0f
+            		vals1.add(new Entry(value, i));
+        		}
+			}
+	       
         	var set1 = new LineDataSet(vals1, "DataSet 1");
-        	set1.setDrawCubic(true);
-        	set1.setCubicIntensity(0.2f);
+        	set1.setDrawCubic(false);
         	//set1.setDrawFilled(true);
         	set1.setDrawCircles(false); 
         	set1.setLineWidth(2f);
@@ -121,8 +153,10 @@ import com.github.mikephil.charting.data.LineData
         	mChart.setData(data)
         
         	mChart.getLegend().setEnabled(false)
-        	mChart.animateX(3000)
-        	mChart.invalidate()
+        	mChart.animateX(1000)
+        	mChart.invalidate()		// Ask to draw itself
+    	} else {
+    		mChart.clear()
     	}
     }
 }
