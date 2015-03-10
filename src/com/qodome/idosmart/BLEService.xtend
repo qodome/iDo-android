@@ -66,6 +66,11 @@ class BLEService extends IntentService {
     var boolean mPeriodTempValid
     var JSONArray mTempJson
     var Lock mLock
+    static var boolean readInProgress
+    static var int readWaitPeriod
+    static var List<BluetoothGattCharacteristic> readQueue
+    static var Lock mReadQueueLock
+    static var BluetoothGattCharacteristic mReadGattChar
     
     var ScanCallback mLeScanCallback =
             new ScanCallback() {
@@ -179,6 +184,11 @@ class BLEService extends IntentService {
     	
 		mTempJson = new JSONArray()
 		
+		readInProgress = false
+    	readWaitPeriod = 0
+   		readQueue = new ArrayList<BluetoothGattCharacteristic>()
+   		mReadQueueLock = new ReentrantLock()
+		
 		Log.i(getString(R.string.LOGTAG), "BLEService created")        
     }
 	
@@ -202,11 +212,11 @@ class BLEService extends IntentService {
     
 	override onHandleIntent(Intent intent) {                
     	Log.i(getString(R.string.LOGTAG), "onHandleIntent got intent")    	
-    	mPeriodStart = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000L
+    	mPeriodStart = Calendar.getInstance().getTimeInMillis() / 1000L
     	mPeriodStart = (mPeriodStart / 300) * 300
 
     	while (true) {
-    		val timeNow = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis() / 1000L 
+    		val timeNow = Calendar.getInstance().getTimeInMillis() / 1000L 
         	if ((timeNow - mPeriodStart) >= 300) {
         		mLock.lock()
         		if (mPeriodTempValid == true) {
@@ -217,8 +227,8 @@ class BLEService extends IntentService {
         		mPeriodTempValid = false
         		mPeriodStart += 300
         		// Dump data now
-        		if (mTempJson.length() >= 12) {
-        			dumpJsonArray(mTempJson)
+        		if (mTempJson.length() >= 2) {
+        			dumpJsonArray(mTempJson, mPeriodStart)
         			mTempJson = new JSONArray()
         		}
         		mLock.unlock()
@@ -229,6 +239,15 @@ class BLEService extends IntentService {
     			mTriggerMonitorStart = false
     			startMonitorTemp()
     		}
+    		
+    		mReadQueueLock.lock()
+        	if (readInProgress == true) {
+        		readWaitPeriod++
+        		if (readWaitPeriod > 5) {
+        			mGatt?.readCharacteristic(mReadGattChar)
+        		}
+        	}
+        	mReadQueueLock.unlock()  
     	}
     }
     
@@ -251,6 +270,12 @@ class BLEService extends IntentService {
                 if (mDevice != null) {
                 	connect(mDevice.getAddress())
                 }
+                
+                mReadQueueLock.lock()
+               	readInProgress = false
+    			readWaitPeriod = 0
+   				readQueue = new ArrayList<BluetoothGattCharacteristic>()
+   				mReadQueueLock.unlock()
             }
             oadService?.onConnectionStatusChanged(newState)
         }
@@ -282,6 +307,19 @@ class BLEService extends IntentService {
         override onCharacteristicRead(BluetoothGatt gatt,
                 						BluetoothGattCharacteristic characteristic,
                 						int status) {
+            mReadQueueLock.lock()
+            readWaitPeriod = 0
+        	if (readQueue.size() > 0) {
+        		mReadGattChar = readQueue.get(0)
+        		readQueue.remove(0)
+        		mGatt?.readCharacteristic(mReadGattChar)
+				readInProgress = true
+        	} else {
+        		mReadGattChar = null
+        		readWaitPeriod = 0
+        		readInProgress = false
+        	}
+        	mReadQueueLock.unlock()
             oadService?.readCallback(status, characteristic)    							
         	ddActivity?.readCallback(status, characteristic)
         }
@@ -354,22 +392,16 @@ class BLEService extends IntentService {
         
         gattService = mGatt?.getService(UUID.fromString(serviceUuid))
         gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
-        gattService = mGatt?.getService(UUID.fromString(serviceUuid))
-        gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         gattChar?.setValue(data)
         if (gattChar != null) {
         	mGatt?.writeCharacteristic(gattChar)
         }
-        // FIXME: add timeout check
-        // FIXME: multiple requests shall be queued!
     }
     
     def static writeCharacteristicWithoutRsp(String serviceUuid, String charUuid, byte[] data) {
         var BluetoothGattService gattService = null
         var BluetoothGattCharacteristic gattChar = null
         
-        gattService = mGatt?.getService(UUID.fromString(serviceUuid))
-        gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         gattService = mGatt?.getService(UUID.fromString(serviceUuid))
         gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         gattChar?.setValue(data)
@@ -384,18 +416,23 @@ class BLEService extends IntentService {
         var BluetoothGattCharacteristic gattChar = null
         
         gattService = mGatt?.getService(UUID.fromString(serviceUuid))
-        gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid)) 
-        gattService = mGatt?.getService(UUID.fromString(serviceUuid))
         gattChar = gattService?.getCharacteristic(UUID.fromString(charUuid))
         if (gattChar != null) {
-        	Log.i("iDoSmart", "read char " + charUuid)
-        	mGatt?.readCharacteristic(gattChar)        	
+        	Log.i("iDoSmart", "read char " + charUuid)        	
+        	mReadQueueLock.lock()
+        	if (readInProgress == false) {
+        		readInProgress = true
+        		mReadGattChar = gattChar
+        		readWaitPeriod = 0
+        		mGatt?.readCharacteristic(gattChar)
+        	} else {
+        		readQueue.add(gattChar)
+        	}
+        	mReadQueueLock.unlock()     	
         }
-        // FIXME: add timeout check
-        // FIXME: multiple requests shall be queued!
     }
     
-    def dumpJsonArray(JSONArray jArray) {
+    def dumpJsonArray(JSONArray jArray, long periodStart) {
 		var FileOutputStream reportOutput = null
 
 		var c = Calendar.getInstance()
@@ -414,7 +451,17 @@ class BLEService extends IntentService {
 		var existingString = CharStreams.toString(new InputStreamReader(new FileInputStream(fn), Charsets.UTF_8))
 		var JSONArray existingJsonArray
 		if (existingString.length() > 0) {
-			existingJsonArray = new JSONArray(existingString)	
+			existingJsonArray = new JSONArray(existingString)
+			// Check if there is gap between latest record and current one,
+			// fill with null
+			var lastStart = existingJsonArray.getJSONArray(existingJsonArray.length() - 1).getInt(0)
+			if ((lastStart + 300) < periodStart) {
+				lastStart += 300
+				while (lastStart < periodStart) {
+					existingJsonArray.put(new JSONArray("[" + lastStart + ",null,null,null,null]"))
+					lastStart += 300
+				}
+			}
 		} else {
 			existingJsonArray = new JSONArray()
 		}

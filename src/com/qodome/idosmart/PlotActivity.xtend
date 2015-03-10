@@ -45,7 +45,7 @@ import com.google.common.base.Charsets
 			if (files.get(i).getName().contains(".json")) {
 				var fields = files.get(i).getName().split(".json") as String[]
 				fields = fields.get(0).split("_")
-				addRecords2Calendar(Integer.parseInt(fields.get(0)), Integer.parseInt(fields.get(1)), Integer.parseInt(fields.get(2)))
+				addRecords2Calendar(Integer.parseInt(fields.get(0)), (Integer.parseInt(fields.get(1)) - 1), Integer.parseInt(fields.get(2)))
 			}
 		}
 		
@@ -63,7 +63,7 @@ import com.google.common.base.Charsets
     	values.put(CalendarProvider.LOCATION, "")
     	values.put(CalendarProvider.EVENT, "TEMP")
 
-    	var cal = Calendar.getInstance()
+    	var cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
 
     	cal.set(year, month, day, 0, 0);
     	values.put(CalendarProvider.START, cal.getTimeInMillis());
@@ -127,12 +127,8 @@ import com.google.common.base.Charsets
         			}
             		vals1.add(new Entry(value, i));
         		}
-        		for (var i = (remain + dataArray.length()); i < count; i++) {
-        			var value = 0.0f
-            		vals1.add(new Entry(value, i));
-        		}
 			} else {
-				for (var i = 0; i < count; i++) {
+				for (var i = 0; i < 1; i++) {
             		var value = 0.0f
             		vals1.add(new Entry(value, i));
         		}
@@ -140,20 +136,20 @@ import com.google.common.base.Charsets
 	       
         	var set1 = new LineDataSet(vals1, "DataSet 1");
         	set1.setDrawCubic(false);
-        	//set1.setDrawFilled(true);
-        	set1.setDrawCircles(false); 
-        	set1.setLineWidth(2f);
-        	set1.setCircleSize(5f);
+        	set1.setDrawFilled(false);
+        	set1.setDrawCircles(false);
+        	set1.setLineWidth(1f);
+        	//set1.setCircleSize(5f);
         	set1.setHighLightColor(Color.rgb(244, 117, 117));
         	set1.setColor(Color.rgb(104, 241, 175));
-        	set1.setFillColor(ColorTemplate.getHoloBlue());
+        	//set1.setFillColor(ColorTemplate.getHoloBlue());
         	var data = new LineData(xVals, set1)
         	data.setValueTextSize(9f)
-        	data.setDrawValues(false)
+        	data.setDrawValues(true)
         	mChart.setData(data)
         
         	mChart.getLegend().setEnabled(false)
-        	mChart.animateX(1000)
+        	mChart.animateX(2000)
         	mChart.invalidate()		// Ask to draw itself
     	} else {
     		mChart.clear()

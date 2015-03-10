@@ -17,6 +17,7 @@ import android.preference.PreferenceManager
 
 	@OnCreate
     def init(Bundle savedInstanceState) {
+    	PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         startService(new Intent(this, typeof(BLEService)))
         registerReceiver(mServiceActionReceiver, serviceActionIntentFilter())
     }
@@ -46,10 +47,10 @@ import android.preference.PreferenceManager
 			if (intent.getAction().equals(getString(R.string.ACTION_UPDATE_TEMP))) {
         		runOnUiThread[
         			var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
-					var sb = new StringBuilder(p.data.length * 3)
-        			for (byte b: p.data) {
-        				sb.append(String.format("%02x ", b));
-        			}
+					//var sb = new StringBuilder(p.data.length * 3)
+        			//for (byte b: p.data) {
+        			//	sb.append(String.format("%02x ", b));
+        			//}
         			//Log.i(getString(R.string.LOGTAG), "MainActivity got Notification: " + sb.toString());
         							
 					var tempUnit = PreferenceManager?.getDefaultSharedPreferences(selfActivity)?.getStringSet("temp_unit_selection", null)
