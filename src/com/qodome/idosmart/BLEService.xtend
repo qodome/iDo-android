@@ -1,6 +1,5 @@
 package com.qodome.idosmart
 
-import android.bluetooth.le.ScanCallback
 import android.app.IntentService
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -10,9 +9,6 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
-import android.bluetooth.le.ScanFilter
-import android.bluetooth.le.ScanResult
-import android.bluetooth.le.ScanSettings
 import android.content.Intent
 import android.os.Environment
 import android.os.ParcelUuid
@@ -59,8 +55,6 @@ class BLEService extends IntentService {
     static public var DeviceDetailActivity ddActivity = null
     static public var OADService oadService = null
     var String folderName
-    var List<ScanFilter> crmFilterList
-    var ScanSettings crmScanSetting
     var boolean mScanStarted = false
     var boolean mTriggerMonitorStart = false
     var long mPeriodStart = 0
@@ -73,22 +67,24 @@ class BLEService extends IntentService {
     var Lock mLock
     var String forceConnectAddress = null
     var Ringtone r;
+    var UUID[] scanUUID = #[UUID.fromString(GATTConstants.BLE_HEALTH_THERMOMETER)]
     static var boolean readInProgress = false
     static var int readWaitPeriod = 0
     static var List<BluetoothGattCharacteristic> readQueue
     static var Lock mReadQueueLock
     static var BluetoothGattCharacteristic mReadGattChar = null
     
-    var ScanCallback mLeScanCallback =
-            new ScanCallback() {
-        override onScanResult(int callbackType, ScanResult result) {
+    
+    var BluetoothAdapter.LeScanCallback mLeScanCallback =
+            new BluetoothAdapter.LeScanCallback() {
+        override onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
         	mLock.lock()
-        	if (!mScanDevMap.containsKey(result.getDevice().getAddress())) {
-        		Log.i(getString(R.string.LOGTAG), "Scan found device: " + result.getDevice().getAddress())
-        		mScanDevMap.put(result.getDevice().getAddress(), result.getDevice())
+        	if (!mScanDevMap.containsKey(device.getAddress())) {
+        		Log.i(getString(R.string.LOGTAG), "Scan found device: " + device.getAddress())
+        		mScanDevMap.put(device.getAddress(), device)
         		sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
-        		mScanDevNameList.add(result.getDevice().getName())
-        		mScanDevAddrList.add(result.getDevice().getAddress())
+        		mScanDevNameList.add(device.getName())
+        		mScanDevAddrList.add(device.getAddress())
         	}        	
         	mLock.unlock()
         }
@@ -99,7 +95,7 @@ class BLEService extends IntentService {
 			if (intent.getAction().equals(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE))) {
 				if (mScanStarted == false) {
 					mScanStarted = true
-					mBluetoothAdapter?.getBluetoothLeScanner().startScan(crmFilterList, crmScanSetting, mLeScanCallback)
+					mBluetoothAdapter?.startLeScan(scanUUID, mLeScanCallback)
 				}
 				
 				mLock.lock()
@@ -130,7 +126,7 @@ class BLEService extends IntentService {
 			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP_SCAN))) {
 				if (mScanStarted == true) {
 					mScanStarted = false
-					mBluetoothAdapter?.getBluetoothLeScanner().stopScan(mLeScanCallback)					
+					mBluetoothAdapter?.stopLeScan(mLeScanCallback)					
 				}
 			}
 		}
@@ -176,9 +172,6 @@ class BLEService extends IntentService {
         mScanDevMap = new HashMap<String, BluetoothDevice>()
         mScanDevNameList = new ArrayList<String>()
         mScanDevAddrList = new ArrayList<String>()
-        crmFilterList = new ArrayList<ScanFilter>()
-        crmFilterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(GATTConstants.BLE_HEALTH_THERMOMETER)).build())
-        crmScanSetting = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
         
         var note = new Notification( 0, null, System.currentTimeMillis())
     	note.flags = Notification.FLAG_NO_CLEAR
