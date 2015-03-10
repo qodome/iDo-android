@@ -14,15 +14,15 @@
     
     <string name="low_temp_notify">Low Temp Warning</string>
     <string name="low_temp_notify_sum">Enable the low temperature warning function</string>
-    <string name="low_temp_notify_value_title">Low Temperature Warning Threshold</string>
-    <string name="low_temp_notify_value_summaries">Range: 10°C ~ 36°C</string>
+    <string name="low_temp_notify_value_title">Low Temp Warning Threshold</string>
+    <string name="low_temp_notify_value_summaries">LOW</string>
     <item name="low_temp_notify_value_default" format="float" type="string">0.5</item>
     <string name="low_temp_notify_value_message">Temperature Low Threshold: </string>
 
     <string name="high_temp_notify">High Temp Warning</string>
     <string name="high_temp_notify_sum">Enable the high temperature warning function</string>
-    <string name="high_temp_notify_value_title">High Temperature Warning Threshold</string>
-    <string name="high_temp_notify_value_summaries">Range: 36°C ~ 46°C</string>
+    <string name="high_temp_notify_value_title">High Temp Warning Threshold</string>
+    <string name="high_temp_notify_value_summaries">HIGH</string>
     <item name="high_temp_notify_value_default" format="float" type="string">0.5</item>
     <string name="high_temp_notify_value_message">Temperature High Threshold:</string>
 
@@ -36,9 +36,7 @@
         <item>F_TYPE</item>
         <item>K_TYPE</item>
     </string-array>
-    <string-array name="temp_unit_default">
-        <item>C_TYPE</item>
-    </string-array>    
+    <string name="temp_unit_default">C_TYPE</string> 
     <string name="temp_unit_C">C_TYPE</string>
     <string name="temp_unit_F">F_TYPE</string>
     <string name="temp_unit_K">K_TYPE</string>

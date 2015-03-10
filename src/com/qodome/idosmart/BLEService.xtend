@@ -44,6 +44,7 @@ import com.google.common.base.Charsets
 import java.io.FileInputStream
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
+import android.preference.PreferenceManager
 
 class BLEService extends IntentService {
 	var BluetoothManager mBluetoothManager
@@ -359,7 +360,7 @@ class BLEService extends IntentService {
     }
     
     def handleTempUpdate(byte[] data) {
-    	val temp = Utils.getTempC(data)
+		val temp = Utils.getTempC(data)
     	
     	mLock.lock()        
         if (mPeriodTempValid == false) {

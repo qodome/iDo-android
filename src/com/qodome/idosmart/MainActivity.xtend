@@ -53,16 +53,8 @@ import android.preference.PreferenceManager
         			//}
         			//Log.i(getString(R.string.LOGTAG), "MainActivity got Notification: " + sb.toString());
         							
-					var tempUnit = PreferenceManager?.getDefaultSharedPreferences(selfActivity)?.getStringSet("temp_unit_selection", null)
-					var tempUnitCfg = tempUnit.get(0)
-					if (tempUnitCfg == getString(R.string.temp_unit_F)) {
-						// Parse temperature as F
-					} else if (tempUnitCfg == getString(R.string.temp_unit_K)) {
-						// Parse temperature as K
-					} else {
-						// Parse temperature as C
-						currentTemp.text = Utils.getTempC(p.data).toString()
-					}
+					var tempUnit = PreferenceManager?.getDefaultSharedPreferences(selfActivity)?.getString("temp_unit_selection", "C_TYPE")
+					currentTemp.text = Utils.getTempType(p.data, tempUnit)
 				]
 			}
 		}

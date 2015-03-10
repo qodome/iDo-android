@@ -28,13 +28,13 @@
     	android:dialogMessage="@string/high_temp_notify_value_message"
     	android:dependency="high_temp_notify"/>
     
-    <MultiSelectListPreference
+    <ListPreference
         android:key="temp_unit_selection"
         android:title="@string/temp_unit_selection_title"
         android:dialogTitle="@string/temp_unit_selection_dialogtitle"        
-        android:summary="@string/temp_unit_selection_summary"        
+        android:summary="%s"        
         android:entries="@array/temp_unit_selection_entries"
         android:entryValues="@array/temp_unit_selection_entryvalues"
-        android:defaultValue="@array/temp_unit_default"/>
+        android:defaultValue="C_TYPE"/>
         
 </PreferenceScreen>

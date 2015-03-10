@@ -6,6 +6,8 @@ import java.lang.Math;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import android.util.Log;
+
 public class Utils {
 	public static byte[] bytes;
 	
@@ -35,7 +37,7 @@ public class Utils {
 	    bd = bd.setScale(places, RoundingMode.HALF_UP);
 	    return bd.doubleValue();
 	}
-	
+
 	public static double getTempC(byte[] b) {
 		double d = 0.0;
 		int i = 0;
@@ -43,6 +45,29 @@ public class Utils {
 		i = b[3] * 256 * 256 + b[2] * 256 + b[1];
 		d = (double)i / 10000.0;
 		return round(d, 1);
+	}	
+	
+	public static String getTempType(byte[] b, String tempUnitCfg) {
+		double d = 0.0;
+		int i = 0;
+		String ret = new String("");
+		
+		i = b[3] * 256 * 256 + b[2] * 256 + b[1];
+		d = (double)i / 10000.0;
+		if (tempUnitCfg.endsWith("F_TYPE")) {
+			// Parse temperature as F
+			d = round((d * 1.8 + 32.0), 1);
+			ret = new String(String.valueOf(d) + "°F");
+		} else if (tempUnitCfg.endsWith("K_TYPE")) {
+			// Parse temperature as K
+			d = round((d + 273.15), 1);
+			ret = new String(String.valueOf(d) + "K");
+		} else {
+			// Parse temperature as C
+			d = round(d, 1);
+			ret = new String(String.valueOf(d) + "°C");
+		}
+		return ret;
 	}
 	
 	public static byte[] parepareBlock(int idx, byte[] b) {
