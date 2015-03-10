@@ -45,36 +45,39 @@ import java.io.FileInputStream
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import android.preference.PreferenceManager
+import android.media.RingtoneManager
+import android.media.Ringtone
 
 class BLEService extends IntentService {
 	var BluetoothManager mBluetoothManager
     var BluetoothAdapter mBluetoothAdapter
-    static public var BluetoothDevice mDevice
-    static public var BluetoothGatt mGatt    
+    static public var BluetoothDevice mDevice = null
+    static public var BluetoothGatt mGatt = null
     static public var Map<String, BluetoothDevice> mScanDevMap
     static public var List<String> mScanDevNameList
     static public var List<String> mScanDevAddrList
-    static public var DeviceDetailActivity ddActivity
-    static public var OADService oadService
+    static public var DeviceDetailActivity ddActivity = null
+    static public var OADService oadService = null
     var String folderName
     var List<ScanFilter> crmFilterList
     var ScanSettings crmScanSetting
-    var boolean mScanStarted
-    var boolean mTriggerMonitorStart
-    var long mPeriodStart
-    var double mPeriodTempStart
-    var double mPeriodTempMax
-    var double mPeriodTempMin
-    var double mPeriodTempLast
-    var boolean mPeriodTempValid
-    var JSONArray mTempJson
+    var boolean mScanStarted = false
+    var boolean mTriggerMonitorStart = false
+    var long mPeriodStart = 0
+    var double mPeriodTempStart = 0.0
+    var double mPeriodTempMax = 0.0
+    var double mPeriodTempMin = 0.0
+    var double mPeriodTempLast = 0.0
+    var boolean mPeriodTempValid = false
+    var JSONArray mTempJson = null
     var Lock mLock
-    var String forceConnectAddress
-    static var boolean readInProgress
-    static var int readWaitPeriod
+    var String forceConnectAddress = null
+    var Ringtone r;
+    static var boolean readInProgress = false
+    static var int readWaitPeriod = 0
     static var List<BluetoothGattCharacteristic> readQueue
     static var Lock mReadQueueLock
-    static var BluetoothGattCharacteristic mReadGattChar
+    static var BluetoothGattCharacteristic mReadGattChar = null
     
     var ScanCallback mLeScanCallback =
             new ScanCallback() {
@@ -167,27 +170,14 @@ class BLEService extends IntentService {
         // For API level 18 and above, get a reference to BluetoothAdapter through
         // BluetoothManager.
         mBluetoothManager = getSystemService("bluetooth") as BluetoothManager
-
         mBluetoothAdapter = mBluetoothManager?.getAdapter()
-        mDevice = null
-        mGatt = null
-        ddActivity = null
-        oadService = null
-        mScanStarted = false
-        mTriggerMonitorStart = false
-        mPeriodStart = 0
-        mPeriodTempStart = 0.0
-        mPeriodTempMax = 0.0
-        mPeriodTempMin = 0.0
-		mPeriodTempLast = 0.0
-		mPeriodTempValid = false
-		forceConnectAddress = null
+
 		mLock = new ReentrantLock()
         mScanDevMap = new HashMap<String, BluetoothDevice>()
         mScanDevNameList = new ArrayList<String>()
         mScanDevAddrList = new ArrayList<String>()
         crmFilterList = new ArrayList<ScanFilter>()
-        crmFilterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString("00001809-0000-1000-8000-00805f9b34fb")).build())
+        crmFilterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(GATTConstants.BLE_HEALTH_THERMOMETER)).build())
         crmScanSetting = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
         
         var note = new Notification( 0, null, System.currentTimeMillis())
@@ -195,12 +185,11 @@ class BLEService extends IntentService {
     	startForeground(42, note)
     	
 		mTempJson = new JSONArray()
-		
-		readInProgress = false
-    	readWaitPeriod = 0
    		readQueue = new ArrayList<BluetoothGattCharacteristic>()
    		mReadQueueLock = new ReentrantLock()
 		
+		r = RingtoneManager.getRingtone(getApplicationContext(), RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
+				
 		Log.i(getString(R.string.LOGTAG), "BLEService created")        
     }
 	
@@ -298,6 +287,11 @@ class BLEService extends IntentService {
     			readWaitPeriod = 0
    				readQueue = new ArrayList<BluetoothGattCharacteristic>()
    				mReadQueueLock.unlock()
+   				
+   				if (r.isPlaying() == true) {
+    				r.stop()
+    				Log.i(getString(R.string.LOGTAG), "Stop alarm")
+    			}
             }
             oadService?.onConnectionStatusChanged(newState)
         }
@@ -359,8 +353,31 @@ class BLEService extends IntentService {
         }
     }
     
+    def checkWarnings(double temp) {
+    	var float low = PreferenceManager?.getDefaultSharedPreferences(this)?.getFloat("low_temp_notify_value", 0.5f)
+    	low = Utils.round((10.0f + 26.0f * low), 1) as float
+    	var float high = PreferenceManager?.getDefaultSharedPreferences(this)?.getFloat("high_temp_notify_value", 0.5f)
+    	high = Utils.round((36.0f + 10.0f * high), 1) as float
+    	
+    	if ((PreferenceManager?.getDefaultSharedPreferences(this)?.getBoolean("low_temp_notify", false) == true && temp < low) ||
+    		(PreferenceManager?.getDefaultSharedPreferences(this)?.getBoolean("high_temp_notify", false) == true && temp > high)) {
+    		if (r.isPlaying() == false) {    			
+				r.play()
+				Log.i(getString(R.string.LOGTAG), "Trigger alarm")    		    			
+    		}
+    	} else {
+    		if (r.isPlaying() == true) {
+    			r.stop()
+    			Log.i(getString(R.string.LOGTAG), "Stop alarm")
+    		}
+    	}
+    }
+    
     def handleTempUpdate(byte[] data) {
 		val temp = Utils.getTempC(data)
+    	
+    	
+    	checkWarnings(temp)
     	
     	mLock.lock()        
         if (mPeriodTempValid == false) {
