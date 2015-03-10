@@ -106,6 +106,7 @@ class OADService extends IntentService {
     	
     	Log.i(getString(R.string.LOGTAG), "OADService onHandleIntent check status")
     	if (status == OADStatus.ALREADY_LATEST) {
+    		sendOADVersion(currentVersion, "")
     		sendStatusUpdate("Image Already Latest")
     		return
     	} else if (status == OADStatus.NOT_SUPPORTED) {

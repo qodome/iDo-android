@@ -33,6 +33,7 @@ import android.content.DialogInterface
     	BLEService.ddActivity = this
     	fvKnown = false
     	
+    	deviceDetailTitle.text = BLEService.mDevice?.getName()
     	devDetailHead = new ArrayList<DevDetailElement>()
     	devDetailContent = new ArrayList<DevDetailElement>()
     	var devElem = new DevDetailElement()

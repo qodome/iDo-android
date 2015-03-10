@@ -9,6 +9,37 @@
     android:background="@color/iDoWhite"
     android:orientation="vertical">
 
+    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="horizontal">
+    	
+        <TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"
+        	android:gravity="left"/>
+            
+    	<TextView
+     		android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:text="Firmware Update"
+        	android:gravity="center"/>    
+        
+        <TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"
+        	android:gravity="right"/>    
+    
+    </LinearLayout>    
+    
+    <TextView
+     	android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:gravity="left"/>
+    
     <LinearLayout 
     	android:layout_width="match_parent"
     	android:layout_height="wrap_content"
@@ -18,6 +49,7 @@
         	android:layout_width="wrap_content"
         	android:layout_height="match_parent"
         	android:gravity="left"
+        	android:textColor="#000000"
         	android:text="Current Version"/>
 
     	<TextView
@@ -29,6 +61,7 @@
 		    android:id="@+id/oad_current_version"
         	android:layout_width="wrap_content"
         	android:layout_height="match_parent"
+        	android:textColor="#000000"
         	android:gravity="right"/>		
 				
     </LinearLayout>
@@ -42,6 +75,7 @@
         	android:layout_width="wrap_content"
         	android:layout_height="match_parent"
         	android:gravity="left"
+        	android:textColor="#000000"
         	android:text="Target Version"/>
 
     	<TextView
@@ -53,6 +87,7 @@
 		    android:id="@+id/oad_target_version"
         	android:layout_width="wrap_content"
         	android:layout_height="match_parent"
+        	android:textColor="#000000"
         	android:gravity="right"/>		
 				
     </LinearLayout>
@@ -66,6 +101,7 @@
         	android:layout_width="wrap_content"
         	android:layout_height="match_parent"
         	android:gravity="left"
+        	android:textColor="#000000"
         	android:text="OAD Progress"/>
 
     	<TextView
@@ -77,6 +113,7 @@
 		    android:id="@+id/oad_progress"
         	android:layout_width="wrap_content"
         	android:layout_height="match_parent"
+        	android:textColor="#000000"
         	android:gravity="right"/>		
 				
     </LinearLayout>    

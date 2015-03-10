@@ -51,6 +51,8 @@ class BLEService extends IntentService {
     static public var BluetoothDevice mDevice
     static public var BluetoothGatt mGatt    
     static public var Map<String, BluetoothDevice> mScanDevMap
+    static public var List<String> mScanDevNameList
+    static public var List<String> mScanDevAddrList
     static public var DeviceDetailActivity ddActivity
     static public var OADService oadService
     var String folderName
@@ -66,6 +68,7 @@ class BLEService extends IntentService {
     var boolean mPeriodTempValid
     var JSONArray mTempJson
     var Lock mLock
+    var String forceConnectAddress
     static var boolean readInProgress
     static var int readWaitPeriod
     static var List<BluetoothGattCharacteristic> readQueue
@@ -75,11 +78,15 @@ class BLEService extends IntentService {
     var ScanCallback mLeScanCallback =
             new ScanCallback() {
         override onScanResult(int callbackType, ScanResult result) {
+        	mLock.lock()
         	if (!mScanDevMap.containsKey(result.getDevice().getAddress())) {
         		Log.i(getString(R.string.LOGTAG), "Scan found device: " + result.getDevice().getAddress())
         		mScanDevMap.put(result.getDevice().getAddress(), result.getDevice())
         		sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
+        		mScanDevNameList.add(result.getDevice().getName())
+        		mScanDevAddrList.add(result.getDevice().getAddress())
         	}        	
+        	mLock.unlock()
         }
     }
 	
@@ -91,11 +98,11 @@ class BLEService extends IntentService {
 					mBluetoothAdapter?.getBluetoothLeScanner().startScan(crmFilterList, crmScanSetting, mLeScanCallback)
 				}
 				
+				mLock.lock()
 				var p = new IPC
-				p.devAddr = new ArrayList<String>(mScanDevMap.keySet())
-				p.devName = p.devAddr.map[ devAddr |
-					return mScanDevMap.get(devAddr).getName()
-				]
+				p.devAddr = mScanDevAddrList
+				p.devName = mScanDevNameList
+				mLock.unlock()
 				sendBroadcast(new Intent(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE)).putExtra(getString(R.string.ACTION_EXTRA), p))
 			} else if (intent.getAction().equals(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED))) {
 				if (mDevice != null) {
@@ -114,7 +121,8 @@ class BLEService extends IntentService {
                 mDevice = null
 				
 				var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
-				connect(p.devAddr.get(0))
+				forceConnectAddress = p.devAddr.get(0)
+				connect(forceConnectAddress)
 			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP_SCAN))) {
 				if (mScanStarted == true) {
 					mScanStarted = false
@@ -172,8 +180,11 @@ class BLEService extends IntentService {
         mPeriodTempMin = 0.0
 		mPeriodTempLast = 0.0
 		mPeriodTempValid = false
+		forceConnectAddress = null
 		mLock = new ReentrantLock()
         mScanDevMap = new HashMap<String, BluetoothDevice>()
+        mScanDevNameList = new ArrayList<String>()
+        mScanDevAddrList = new ArrayList<String>()
         crmFilterList = new ArrayList<ScanFilter>()
         crmFilterList.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString("00001809-0000-1000-8000-00805f9b34fb")).build())
         crmScanSetting = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
@@ -259,7 +270,15 @@ class BLEService extends IntentService {
         override onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
             	mDevice = gatt.getDevice()
+            	mLock.lock()
                 mScanDevMap.remove(mDevice.getAddress())
+                if (mScanDevAddrList.contains(mDevice.getAddress())) {
+                	var idx = mScanDevAddrList.indexOf(mDevice.getAddress())
+                	mScanDevAddrList.remove(idx)
+                	mScanDevNameList.remove(idx)
+                }
+                mLock.unlock()
+                // Force DeviceListActivity update
                 sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
 				sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED)))
                 gatt.discoverServices()
@@ -267,7 +286,9 @@ class BLEService extends IntentService {
                 Log.w(getString(R.string.LOGTAG), "Device " + gatt.getDevice().getAddress() + " disconnected!")
                 gatt.disconnect()
                 gatt.close()
-                if (mDevice != null) {
+                if (forceConnectAddress != null) {
+                	connect(forceConnectAddress)
+                } else if (mDevice != null) {
                 	connect(mDevice.getAddress())
                 }
                 

@@ -17,16 +17,19 @@ import org.xtendroid.adapter.BeanAdapter
 import android.widget.ListView
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView
+import android.widget.ProgressBar
 
 @Accessors class DevElementView {
   String deviceListElemName
   String deviceListElemAddr
+  String connectProgressBar
 }
 
 @AndroidActivity(R.layout.activity_device_list) class DeviceListActivity {
 	var devListActivity = this
 	var IPC devListAvailableInfo
 	var IPC devListConnectedInfo
+	var String connCandidate = null
 
 	def updateUIList(Intent intent, ListView view) {
 		runOnUiThread[
@@ -37,6 +40,14 @@ import android.widget.AdapterView
 				var devElem = new DevElementView()
 				devElem.deviceListElemName = p.devName.get(i)
 				devElem.deviceListElemAddr = p.devAddr.get(i)
+				devElem.connectProgressBar = "gone"
+				if (intent.getAction().equals(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE))) {
+					if (connCandidate != null) {
+						if (connCandidate.equals(p.devAddr.get(i))) {
+							devElem.connectProgressBar = "visible"
+						}
+					}
+				}
 				devList.add(devElem)
 			}
 			var adapter = new BeanAdapter<DevElementView>(devListActivity, R.layout.element_device_list, devList)
@@ -55,9 +66,13 @@ import android.widget.AdapterView
 						p.devAddr = new ArrayList<String>()
 						p.devAddr.add(devListAvailableInfo.devAddr.get(position))
 						sendBroadcast(new Intent(getString(R.string.ACTION_CONNECT_TO_DEVICE)).putExtra(getString(R.string.ACTION_EXTRA), p))
+						var progress = view.findViewById(R.id.connect_progress_bar) as ProgressBar
+						progress.setVisibility(View.VISIBLE)
+						connCandidate = devListAvailableInfo.devAddr.get(position)
               		}
             	})
 			} else if (intent.getAction().equals(getString(R.string.ACTION_RSP_DEV_LIST_CONNECTED))) {
+				connCandidate = null
 				updateUIList(intent, deviceListConnected)
 				devListConnectedInfo = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
 				deviceListConnected.setOnItemClickListener(new OnItemClickListener() {
@@ -81,6 +96,15 @@ import android.widget.AdapterView
     	registerReceiver(mServiceActionReceiver, serviceActionIntentFilter())
         queryDevList()
         Log.i(getString(R.string.LOGTAG), "start scan")
+        connCandidate = null
+        
+        var List<DevElementView> devList = new ArrayList<DevElementView>()
+		var devElem = new DevElementView()
+		devElem.deviceListElemName = ""
+		devElem.deviceListElemAddr = ""
+		devElem.connectProgressBar = "gone"
+		devList.add(devElem)
+		deviceListConnected.adapter = new BeanAdapter<DevElementView>(devListActivity, R.layout.element_device_list, devList)
     }
 
 	override onDestroy() {

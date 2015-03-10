@@ -23,6 +23,12 @@
     </ListView>
 
     <TextView
+     	android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:gravity="left"/>    
+    
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Available Device"
@@ -32,6 +38,8 @@
         android:id="@+id/device_list_available"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:divider="#2897C3"
+		android:dividerHeight="2dp"
         android:clickable="true">
     </ListView>
     

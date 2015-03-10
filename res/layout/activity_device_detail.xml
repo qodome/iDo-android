@@ -9,17 +9,64 @@
     android:background="@color/iDoWhite"
     android:orientation="vertical">
 
+    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="horizontal">
+    	
+        <TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"
+        	android:gravity="left"/>
+            
+    	<TextView
+        	android:id="@+id/device_detail_title"
+     		android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:gravity="center"/>    
+        
+        <TextView
+        	android:layout_width="wrap_content"
+        	android:layout_height="match_parent"
+        	android:layout_weight="1"
+        	android:gravity="right"/>    
+    
+    </LinearLayout>
+
+    <TextView
+     	android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:gravity="left"/>
+            
     <ListView 
         android:id="@+id/device_detail_head"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:divider="#2897C3"
+		android:dividerHeight="2dp"        
         android:clickable="true">
     </ListView>
+
+    <TextView
+     	android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=" "
+        android:gravity="left"/>    
+    
+    <TextView
+     	android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Details"
+        android:gravity="left"/>
     
     <ListView 
         android:id="@+id/device_detail_contents"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:divider="#2897C3"
+		android:dividerHeight="2dp"        
         android:clickable="false">
     </ListView>
     
