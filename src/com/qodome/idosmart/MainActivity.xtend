@@ -20,6 +20,7 @@ import android.preference.PreferenceManager
     	PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         startService(new Intent(this, typeof(BLEService)))
         registerReceiver(mServiceActionReceiver, serviceActionIntentFilter())
+        Log.i(getString(R.string.LOGTAG), "iDoSmart start BLEService")
     }
 	
 	override onDestroy() {

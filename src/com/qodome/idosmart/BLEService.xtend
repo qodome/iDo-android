@@ -43,6 +43,7 @@ import java.util.concurrent.locks.ReentrantLock
 import android.preference.PreferenceManager
 import android.media.RingtoneManager
 import android.media.Ringtone
+import android.app.PendingIntent
 
 class BLEService extends IntentService {
 	var BluetoothManager mBluetoothManager
@@ -73,7 +74,6 @@ class BLEService extends IntentService {
     static var List<BluetoothGattCharacteristic> readQueue
     static var Lock mReadQueueLock
     static var BluetoothGattCharacteristic mReadGattChar = null
-    
     
     var BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
@@ -145,6 +145,14 @@ class BLEService extends IntentService {
 		super("BLEService")
 	}
 	
+	override onStartCommand(Intent intent, int flags, int startId) {
+		if (intent.hasExtra("SHUTDOWN")) {
+			Log.i(getString(R.string.LOGTAG), "BLEService get shutdown request")
+			stopSelf()
+        }
+        return super.onStartCommand(intent, flags, startId)
+	}
+	
 	override onCreate() {
     	super.onCreate()
     	
@@ -172,10 +180,22 @@ class BLEService extends IntentService {
         mScanDevMap = new HashMap<String, BluetoothDevice>()
         mScanDevNameList = new ArrayList<String>()
         mScanDevAddrList = new ArrayList<String>()
-        
-        var note = new Notification( 0, null, System.currentTimeMillis())
-    	note.flags = Notification.FLAG_NO_CLEAR
+    	
+    	var intentStop = new Intent(this, typeof(BLEService))
+    	intentStop.putExtra("SHUTDOWN", "SHUTDOWN");
+    	var intentStart = new Intent(this, MainActivity)
+    	var note = new Notification.Builder(this)
+        				.setContentTitle("iDoSmart is running")
+         				.setContentText("Tap to open")
+    	 				.setContentIntent(PendingIntent.getActivity(this, 0, intentStart, PendingIntent.FLAG_CANCEL_CURRENT))
+         				.setSmallIcon(R.drawable.ido_notification)
+         				.addAction(R.drawable.switch_off, "OFF", PendingIntent.getService(this, 0, intentStop, PendingIntent.FLAG_CANCEL_CURRENT))
+         				.build()
+        note.flags = Notification.FLAG_NO_CLEAR
     	startForeground(42, note)
+    	
+    	//.addAction(R.drawable.icon_small, "OPEN", PendingIntent.getActivity(this, 0, new Intent(this, MainActivity), Intent.FLAG_ACTIVITY_NEW_TASK))
+    	
     	
 		mTempJson = new JSONArray()
    		readQueue = new ArrayList<BluetoothGattCharacteristic>()
