@@ -20,14 +20,15 @@ import android.preference.PreferenceManager
     	PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         startService(new Intent(this, typeof(BLEService)))
         registerReceiver(mServiceActionReceiver, serviceActionIntentFilter())
-        Log.i(getString(R.string.LOGTAG), "iDoSmart start BLEService")
+        Log.i(getString(R.string.LOGTAG), "MainActivity onCreate")
     }
 	
 	override onDestroy() {
-    	unregisterReceiver(mServiceActionReceiver)
+		Log.i(getString(R.string.LOGTAG), "MainActivity onDestroy")
+    	unregisterReceiver(mServiceActionReceiver)			
     	super.onDestroy()
     }
-	
+    
 	// Button's cfgSettings method
 	override cfgSettings(View v) {
     	startActivity(new Intent(this, typeof(SettingsActivity)))
@@ -57,6 +58,8 @@ import android.preference.PreferenceManager
 					var tempUnit = PreferenceManager?.getDefaultSharedPreferences(selfActivity)?.getString("temp_unit_selection", "C_TYPE")
 					currentTemp.text = Utils.getTempType(p.data, tempUnit)
 				]
+			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP))) {
+				finish()
 			}
 		}
 	}
@@ -64,6 +67,7 @@ import android.preference.PreferenceManager
 	def serviceActionIntentFilter() {
 		var intentFilter = new IntentFilter()
 		intentFilter.addAction(getString(R.string.ACTION_UPDATE_TEMP))
+		intentFilter.addAction(getString(R.string.ACTION_STOP))
 		return intentFilter
 	}
 	

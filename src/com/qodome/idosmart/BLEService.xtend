@@ -148,6 +148,7 @@ class BLEService extends IntentService {
 	override onStartCommand(Intent intent, int flags, int startId) {
 		if (intent.hasExtra("SHUTDOWN")) {
 			Log.i(getString(R.string.LOGTAG), "BLEService get shutdown request")
+			sendBroadcast(new Intent(getString(R.string.ACTION_STOP)))
 			stopSelf()
         }
         return super.onStartCommand(intent, flags, startId)

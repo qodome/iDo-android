@@ -80,6 +80,8 @@ import android.widget.ProgressBar
 						startActivity(new Intent(devListActivity, typeof(DeviceDetailActivity)))
               		}
             	})
+			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP))) {
+				finish()
 			} 
 		}
 	}
@@ -88,6 +90,7 @@ import android.widget.ProgressBar
 		var intentFilter = new IntentFilter()
 		intentFilter.addAction(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE))
 		intentFilter.addAction(getString(R.string.ACTION_RSP_DEV_LIST_CONNECTED))
+		intentFilter.addAction(getString(R.string.ACTION_STOP))
 		return intentFilter
 	}
 
