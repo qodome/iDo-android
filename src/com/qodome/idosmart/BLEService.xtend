@@ -46,8 +46,8 @@ import android.media.Ringtone
 import android.app.PendingIntent
 
 class BLEService extends IntentService {
-	val final int HISTORY_DUMP_PERIOD_COUNT = 12
-	val final int HISTORY_STATS_SECONDS = 300
+	val static public final int HISTORY_DUMP_PERIOD_COUNT = 12
+	val static public final int HISTORY_STATS_SECONDS = 300
 	
 	var BluetoothManager mBluetoothManager
     var BluetoothAdapter mBluetoothAdapter
@@ -68,6 +68,7 @@ class BLEService extends IntentService {
     var double mPeriodTempMin = 0.0
     var double mPeriodTempLast = 0.0
     var boolean mPeriodTempValid = false
+    var boolean mServiceRunning = false
     var JSONArray mTempJson = null
     var Lock mLock
     var String forceConnectAddress = null
@@ -171,6 +172,7 @@ class BLEService extends IntentService {
 	override onStartCommand(Intent intent, int flags, int startId) {
 		if (intent.hasExtra("SHUTDOWN")) {
 			Log.i(getString(R.string.LOGTAG), "BLEService get shutdown request")
+			mServiceRunning = false
 			sendBroadcast(new Intent(getString(R.string.ACTION_STOP)))
 			stopSelf()
         }
@@ -180,6 +182,7 @@ class BLEService extends IntentService {
 	override onCreate() {
     	super.onCreate()
     	
+    	mServiceRunning = true
     	registerReceiver(mServiceActionReceiver, serviceActionIntentFilter())
     	    	
     	// Storage
@@ -248,13 +251,17 @@ class BLEService extends IntentService {
         }	
     }
     
+    def getZoneIndependentTime() {
+    	return (Calendar.getInstance().getTimeInMillis() + Calendar.getInstance().getTimeZone().getOffset(Calendar.getInstance().getTimeInMillis())) / 1000L
+    }
+    
 	override onHandleIntent(Intent intent) {                
-    	Log.i(getString(R.string.LOGTAG), "onHandleIntent got intent")    	
-    	mPeriodStart = Calendar.getInstance().getTimeInMillis() / 1000L
+    	Log.i(getString(R.string.LOGTAG), "onHandleIntent started") 	    	    	
+    	mPeriodStart = getZoneIndependentTime()
     	mPeriodStart = (mPeriodStart / HISTORY_STATS_SECONDS) * HISTORY_STATS_SECONDS
 
-    	while (true) {
-    		val timeNow = Calendar.getInstance().getTimeInMillis() / 1000L 
+    	while (mServiceRunning == true) {
+    		val timeNow = getZoneIndependentTime() 
         	if ((timeNow - mPeriodStart) >= HISTORY_STATS_SECONDS) {
         		mLock.lock()
         		if (mPeriodTempValid == true) {
@@ -266,7 +273,7 @@ class BLEService extends IntentService {
         		mPeriodStart += HISTORY_STATS_SECONDS
         		// Dump data now
         		if (mTempJson.length() >= HISTORY_DUMP_PERIOD_COUNT) {
-        			dumpJsonArray(mTempJson, mPeriodStart)
+        			dumpJsonArray(mTempJson)
         			mTempJson = new JSONArray()
         		}
         		mLock.unlock()
@@ -287,6 +294,7 @@ class BLEService extends IntentService {
         	}
         	mReadQueueLock.unlock()  
     	}
+    	Log.i(getString(R.string.LOGTAG), "BLEService onHandleIntent exit now")
     }
     
     def connect(String address) {
@@ -526,7 +534,7 @@ class BLEService extends IntentService {
         }
     }
     
-    def dumpJsonArray(JSONArray jArray, long periodStart) {
+    def dumpJsonArray(JSONArray jArray) {
 		var FileOutputStream reportOutput = null
 
 		var c = Calendar.getInstance()
@@ -540,6 +548,9 @@ class BLEService extends IntentService {
 				e2.printStackTrace()
 			}			
 		}
+		
+		var periodStart = jArray.getJSONArray(0).getInt(0)
+		Log.i(getString(R.string.LOGTAG), "dump start ts: " + jArray.getJSONArray(0).getInt(0) + " size: " + jArray.length())
 		
 		// Read JSON from file, do the merge
 		var existingString = CharStreams.toString(new InputStreamReader(new FileInputStream(fn), Charsets.UTF_8))
@@ -555,6 +566,16 @@ class BLEService extends IntentService {
 					existingJsonArray.put(new JSONArray("[" + lastStart + ",null,null,null,null]"))
 					lastStart += HISTORY_STATS_SECONDS
 				}
+
+			} else if ((lastStart + HISTORY_STATS_SECONDS) > periodStart) {
+				Log.w(getString(R.string.LOGTAG), "Warning: duplicated entries in json log")
+				var JSONArray backup = new JSONArray()
+				for (var i = 0; i < existingJsonArray.length(); i++) {
+					if (existingJsonArray.getJSONArray(i).getInt(0) < periodStart) {
+						backup.put(existingJsonArray.getJSONArray(i))
+					}
+				}
+				existingJsonArray = backup
 			}
 		} else {
 			existingJsonArray = new JSONArray()

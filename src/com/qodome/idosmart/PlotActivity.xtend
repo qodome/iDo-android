@@ -33,6 +33,7 @@ import com.google.common.base.Charsets
 
 @AndroidActivity(R.layout.activity_plot) class PlotActivity {
 	var ExtendedCalendarView calendar
+	val final SECONDS_OF_DAY = 86400
 
 	@OnCreate
     def init(Bundle savedInstanceState) {
@@ -84,7 +85,7 @@ import com.google.common.base.Charsets
     	var fn = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/iDoSmart/" +
     					year + "_" + month + "_" + day + ".json")
 		if (fn.exists()) {
-        	val count = 24 * (60 / 5)
+        	val count = SECONDS_OF_DAY / BLEService.HISTORY_STATS_SECONDS
         	
         	mChart.setDescription("")
         	mChart.setHighlightEnabled(true)
@@ -104,6 +105,7 @@ import com.google.common.base.Charsets
         		}
         	}
 
+			var valCount = 0
         	var vals1 = new ArrayList<Entry>();
         	
         	// Read JSON from file, do the merge
@@ -113,12 +115,13 @@ import com.google.common.base.Charsets
 				dataArray = new JSONArray(dataString)
 				var elem = dataArray.getJSONArray(0) as JSONArray
 				var startTime = elem.getInt(0)
-				val remain = (startTime % 86400) / 300
-				for (var i = 0; i < remain; i++) {
+				val remain = (startTime % SECONDS_OF_DAY) / BLEService.HISTORY_STATS_SECONDS
+				for (var i = 0; i < remain && valCount < count; i++) {
             		var value = 0.0f
-            		vals1.add(new Entry(value, i));
+            		vals1.add(new Entry(value, i))
+            		valCount++
         		}
-        		for (var i = remain; i < (remain + dataArray.length()); i++) {
+        		for (var i = remain; i < (remain + dataArray.length()) && valCount < count; i++) {
         			var float value
         			if (!dataArray.getJSONArray((i - remain)).isNull(1)) {
         				value = dataArray.getJSONArray((i - remain)).getDouble(1) as float
@@ -126,11 +129,13 @@ import com.google.common.base.Charsets
         				value = 0.0f
         			}
             		vals1.add(new Entry(value, i));
+            		valCount++
         		}
 			} else {
-				for (var i = 0; i < 1; i++) {
+				for (var i = 0; i < 1 && valCount < count; i++) {
             		var value = 0.0f
-            		vals1.add(new Entry(value, i));
+            		vals1.add(new Entry(value, i))
+            		valCount++
         		}
 			}
 	       
