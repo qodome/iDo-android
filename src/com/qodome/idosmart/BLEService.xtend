@@ -388,6 +388,16 @@ class BLEService extends IntentService {
     			Log.i(getString(R.string.LOGTAG), "Stop alarm")
     		}
     	}
+    	
+    	var p = new IPC
+    	if (temp < low) {
+    		p.colorSetting = "iDoPurple"
+    	} else if (temp > high) {
+    		p.colorSetting = "iDoRed"
+    	} else {
+    		p.colorSetting = "iDoGreen"
+    	}
+		sendBroadcast(new Intent(getString(R.string.ACTION_SET_COLOR)).putExtra(getString(R.string.ACTION_EXTRA), p))
     }
     
     def handleTempUpdate(byte[] data) {

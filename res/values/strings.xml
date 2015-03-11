@@ -10,7 +10,8 @@
 	<string name="ACTION_UPDATE_TEMP">com.qodome.idosmart.ACTION_UPDATE_TEMP</string>
 	<string name="ACTION_OAD_STATUS">com.qodome.idosmart.ACTION_OAD_STATUS</string>
 	<string name="ACTION_OAD_VERSION">com.qodome.idosmart.ACTION_OAD_VERSION</string>
-	<string name="ACTION_STOP">com.qodome.idosmart.ACTION_STOP</string>	
+	<string name="ACTION_SET_COLOR">com.qodome.idosmart.ACTION_SET_COLOR</string>
+	<string name="ACTION_STOP">com.qodome.idosmart.ACTION_STOP</string>
 	<string name="ACTION_EXTRA">com.qodome.idosmart.ACTION_EXTRA</string>
     
     <string name="low_temp_notify">Low Temp Warning</string>

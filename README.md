@@ -12,3 +12,7 @@ https://github.com/orcguru/Xtendroid
 https://github.com/orcguru/AndroidSliderPreference
 https://github.com/orcguru/MPAndroidChart
 https://github.com/orcguru/ExtendedCalendarView
+
+TODO:
+1. app icon
+2. button美化

@@ -3,4 +3,7 @@
         <color name="iDoPurple">#AA66CC</color>
         <color name="iDoBlue">#2897C3</color>
         <color name="iDoWhite">#FFFFFF</color>
+        <color name="iDoGreen">#17A865</color>
+        <color name="iDoRed">#E24424</color>
+        <color name="iDoOranges">#FFBB1F</color>
     </resources>

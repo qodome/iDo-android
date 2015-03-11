@@ -93,6 +93,18 @@ import android.bluetooth.BluetoothAdapter
     		startActivity(new Intent(this, typeof(PlotActivity)))
     	}
 	}
+	
+	def setActivityBackgroundColor(String colorSetting) {
+		var int colorId = R.color.iDoPurple
+		if (colorSetting == "iDoPurple") {
+			colorId = R.color.iDoPurple
+		} else if (colorSetting == "iDoRed") {
+			colorId = R.color.iDoRed
+		} else if (colorSetting == "iDoGreen") {
+			colorId = R.color.iDoGreen
+		}
+		mainWindow.setBackgroundColor(getResources().getColor(colorId))
+	}
 
 	var BroadcastReceiver mServiceActionReceiver = new BroadcastReceiver() {
 		override onReceive(Context context, Intent intent) {
@@ -108,6 +120,11 @@ import android.bluetooth.BluetoothAdapter
 					var tempUnit = PreferenceManager?.getDefaultSharedPreferences(selfActivity)?.getString("temp_unit_selection", "C_TYPE")
 					currentTemp.text = Utils.getTempType(p.data, tempUnit)
 				]
+			} else if (intent.getAction().equals(getString(R.string.ACTION_SET_COLOR))) {
+				runOnUiThread[
+        			var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
+					setActivityBackgroundColor(p.colorSetting)
+				]
 			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP))) {
 				finish()
 			}
@@ -117,6 +134,7 @@ import android.bluetooth.BluetoothAdapter
 	def serviceActionIntentFilter() {
 		var intentFilter = new IntentFilter()
 		intentFilter.addAction(getString(R.string.ACTION_UPDATE_TEMP))
+		intentFilter.addAction(getString(R.string.ACTION_SET_COLOR))
 		intentFilter.addAction(getString(R.string.ACTION_STOP))
 		return intentFilter
 	}

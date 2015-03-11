@@ -10,9 +10,10 @@ class IPC {
     public byte[] data
     public String oadCurrent
     public String oadTarget
-    public String oadStatus    
+    public String oadStatus   
+    public String colorSetting 
 
     override toString() {
-        '''«devAddr», «devName», «data», «oadCurrent», «oadTarget», «oadStatus»'''
+        '''«devAddr», «devName», «data», «oadCurrent», «oadTarget», «oadStatus», «colorSetting»'''
     }
 }
