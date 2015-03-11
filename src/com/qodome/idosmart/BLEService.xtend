@@ -53,6 +53,7 @@ class BLEService extends IntentService {
     var BluetoothAdapter mBluetoothAdapter
     static public var BluetoothDevice mDevice = null
     static public var BluetoothGatt mGatt = null
+    var String mConnStatus = "transit"
     static public var Map<String, BluetoothDevice> mScanDevMap
     static public var List<String> mScanDevNameList
     static public var List<String> mScanDevAddrList
@@ -85,6 +86,7 @@ class BLEService extends IntentService {
         	if (!mScanDevMap.containsKey(device.getAddress())) {
         		Log.i(getString(R.string.LOGTAG), "Scan found device: " + device.getAddress())
         		mScanDevMap.put(device.getAddress(), device)
+        		// Force update available list: send query by self
         		sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
         		mScanDevNameList.add(device.getName())
         		mScanDevAddrList.add(device.getAddress())
@@ -92,6 +94,21 @@ class BLEService extends IntentService {
         	mLock.unlock()
         }
     }
+	
+	def updateConnectionList() {
+		var p = new IPC
+		p.devAddr = new ArrayList<String>()
+		p.devName = new ArrayList<String>()
+		if (mDevice != null) {
+			p.devAddr.add(mDevice.getAddress())
+			p.devName.add(mDevice.getName())
+			p.devConnStatus = mConnStatus
+		} else {
+			p.devAddr.add("NOT_CONNECTED")
+			p.devName.add("NOT_CONNECTED")
+		}
+		sendBroadcast(new Intent(getString(R.string.ACTION_RSP_DEV_LIST_CONNECTED)).putExtra(getString(R.string.ACTION_EXTRA), p))
+	}
 	
 	var BroadcastReceiver mServiceActionReceiver = new BroadcastReceiver() {
 		override onReceive(Context context, Intent intent) {
@@ -108,14 +125,7 @@ class BLEService extends IntentService {
 				mLock.unlock()
 				sendBroadcast(new Intent(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE)).putExtra(getString(R.string.ACTION_EXTRA), p))
 			} else if (intent.getAction().equals(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED))) {
-				if (mDevice != null) {
-					var p = new IPC
-					p.devAddr = new ArrayList<String>()
-					p.devAddr.add(mDevice.getAddress())
-					p.devName = new ArrayList<String>()
-					p.devName.add(mDevice.getName())
-					sendBroadcast(new Intent(getString(R.string.ACTION_RSP_DEV_LIST_CONNECTED)).putExtra(getString(R.string.ACTION_EXTRA), p))
-				}
+				updateConnectionList()
 			} else if (intent.getAction().equals(getString(R.string.ACTION_CONNECT_TO_DEVICE))) {
 				// Disconnect with previous connection if there is any
 				mGatt?.disconnect()
@@ -126,6 +136,15 @@ class BLEService extends IntentService {
 				var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
 				forceConnectAddress = p.devAddr.get(0)
 				connect(forceConnectAddress)
+			} else if (intent.getAction().equals(getString(R.string.ACTION_DISCONNECT))) {
+				Log.i(getString(R.string.LOGTAG), "disconnect!")
+				mGatt?.disconnect()
+                mGatt?.close()
+                mGatt = null
+                mDevice = null
+                forceConnectAddress = null
+                sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
+				sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED)))
 			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP_SCAN))) {
 				if (mScanStarted == true) {
 					mScanStarted = false
@@ -140,6 +159,7 @@ class BLEService extends IntentService {
 		intentFilter.addAction(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE))
 		intentFilter.addAction(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED))
 		intentFilter.addAction(getString(R.string.ACTION_CONNECT_TO_DEVICE))
+		intentFilter.addAction(getString(R.string.ACTION_DISCONNECT))
 		intentFilter.addAction(getString(R.string.ACTION_STOP_SCAN))
 		return intentFilter
 	}
@@ -277,6 +297,7 @@ class BLEService extends IntentService {
         override onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
             	mDevice = gatt.getDevice()
+            	mConnStatus = "transit"
             	mLock.lock()
                 mScanDevMap.remove(mDevice.getAddress())
                 if (mScanDevAddrList.contains(mDevice.getAddress())) {
@@ -298,6 +319,9 @@ class BLEService extends IntentService {
                 } else if (mDevice != null) {
                 	connect(mDevice.getAddress())
                 }
+                mConnStatus = "transit"
+                sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
+				sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED)))
                 
                 mReadQueueLock.lock()
                	readInProgress = false
@@ -315,6 +339,7 @@ class BLEService extends IntentService {
 
         override onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+            	mConnStatus = "solid"
                 mGatt = gatt
                 mTriggerMonitorStart = true
                 /*
@@ -322,12 +347,15 @@ class BLEService extends IntentService {
                 	Log.i(getString(R.string.LOGTAG), service.getUuid().toString())
                 }
                 */
+                sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_AVAILABLE)))
+				sendBroadcast(new Intent(getString(R.string.ACTION_REQ_DEV_LIST_CONNECTED)))
             } else {
                 Log.w(getString(R.string.LOGTAG), "onServicesDiscovered failed")
                 gatt.disconnect()
                 gatt.close()
                 if (mDevice != null) {
                 	connect(mDevice.getAddress())
+                	mConnStatus = "transit"
                 }
             }
         }

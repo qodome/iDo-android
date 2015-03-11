@@ -16,8 +16,11 @@ import java.util.ArrayList
 import org.xtendroid.adapter.BeanAdapter
 import android.widget.ListView
 import android.widget.AdapterView.OnItemClickListener
+import android.widget.AdapterView.OnItemLongClickListener
 import android.widget.AdapterView
 import android.widget.ProgressBar
+import android.app.AlertDialog
+import android.content.DialogInterface
 
 @Accessors class DevElementView {
   String deviceListElemName
@@ -28,37 +31,32 @@ import android.widget.ProgressBar
 @AndroidActivity(R.layout.activity_device_list) class DeviceListActivity {
 	var devListActivity = this
 	var IPC devListAvailableInfo
-	var IPC devListConnectedInfo
 	var String connCandidate = null
 
-	def updateUIList(Intent intent, ListView view) {
-		runOnUiThread[
-			// Populate the list
-			var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
-			var List<DevElementView> devList = new ArrayList<DevElementView>()
-			for (var i = 0; i < p.devAddr.size(); i++) {
-				var devElem = new DevElementView()
-				devElem.deviceListElemName = p.devName.get(i)
-				devElem.deviceListElemAddr = p.devAddr.get(i)
-				devElem.connectProgressBar = "gone"
-				if (intent.getAction().equals(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE))) {
+	var BroadcastReceiver mServiceActionReceiver = new BroadcastReceiver() {
+		override onReceive(Context context, Intent intent) {
+			if (intent.getAction().equals(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE))) {
+				
+				runOnUiThread[
+				// Populate the list
+				var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
+				var List<DevElementView> devList = new ArrayList<DevElementView>()
+				for (var i = 0; i < p.devAddr.size(); i++) {
+					var devElem = new DevElementView()
+					devElem.deviceListElemName = p.devName.get(i)
+					devElem.deviceListElemAddr = p.devAddr.get(i)
+					devElem.connectProgressBar = "gone"
 					if (connCandidate != null) {
 						if (connCandidate.equals(p.devAddr.get(i))) {
 							devElem.connectProgressBar = "visible"
 						}
 					}
+					devList.add(devElem)
 				}
-				devList.add(devElem)
-			}
-			var adapter = new BeanAdapter<DevElementView>(devListActivity, R.layout.element_device_list, devList)
-			view.adapter = adapter
-		]
-	}
-
-	var BroadcastReceiver mServiceActionReceiver = new BroadcastReceiver() {
-		override onReceive(Context context, Intent intent) {
-			if (intent.getAction().equals(getString(R.string.ACTION_RSP_DEV_LIST_AVAILABLE))) {
-				updateUIList(intent, deviceListAvailable)
+				var adapter = new BeanAdapter<DevElementView>(devListActivity, R.layout.element_device_list, devList)
+				deviceListAvailable.adapter = adapter
+				]
+				
 				devListAvailableInfo = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
 				deviceListAvailable.setOnItemClickListener(new OnItemClickListener() {
           			override onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -66,20 +64,62 @@ import android.widget.ProgressBar
 						p.devAddr = new ArrayList<String>()
 						p.devAddr.add(devListAvailableInfo.devAddr.get(position))
 						sendBroadcast(new Intent(getString(R.string.ACTION_CONNECT_TO_DEVICE)).putExtra(getString(R.string.ACTION_EXTRA), p))
-						var progress = view.findViewById(R.id.connect_progress_bar) as ProgressBar
+              			var progress = view.findViewById(R.id.connect_progress_bar) as ProgressBar
 						progress.setVisibility(View.VISIBLE)
 						connCandidate = devListAvailableInfo.devAddr.get(position)
               		}
             	})
 			} else if (intent.getAction().equals(getString(R.string.ACTION_RSP_DEV_LIST_CONNECTED))) {
 				connCandidate = null
-				updateUIList(intent, deviceListConnected)
-				devListConnectedInfo = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
-				deviceListConnected.setOnItemClickListener(new OnItemClickListener() {
-          			override onItemClick(AdapterView<?> parent, View view, int position, long id) {
-						startActivity(new Intent(devListActivity, typeof(DeviceDetailActivity)))
-              		}
-            	})
+				
+				runOnUiThread[
+				// Populate the list
+				var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
+				var List<DevElementView> devList = new ArrayList<DevElementView>()
+				var devElem = new DevElementView()
+				if (p.devAddr.get(0) == "NOT_CONNECTED") {
+					devElem.deviceListElemName = ""
+					devElem.deviceListElemAddr = ""
+					devElem.connectProgressBar = "gone"
+					devList.add(devElem)
+				} else {
+					devElem.deviceListElemName = p.devName.get(0)
+					devElem.deviceListElemAddr = p.devAddr.get(0)
+					if (p.devConnStatus == "transit") {
+						devElem.connectProgressBar = "visible"
+					} else {
+						devElem.connectProgressBar = "gone"
+					}
+					devList.add(devElem)					
+				}	
+				var adapter = new BeanAdapter<DevElementView>(devListActivity, R.layout.element_device_list, devList)
+				deviceListConnected.adapter = adapter
+				]
+				
+				var IPC p = intent.getParcelableExtra(getString(R.string.ACTION_EXTRA))
+				if (p.devAddr.get(0) != "NOT_CONNECTED" && p.devConnStatus != "transit") {
+					deviceListConnected.setOnItemClickListener(new OnItemClickListener() {
+          				override onItemClick(AdapterView<?> parent, View view, int position, long id) {
+							startActivity(new Intent(devListActivity, typeof(DeviceDetailActivity)))
+              			}
+            		})
+            		deviceListConnected.setOnItemLongClickListener(new OnItemLongClickListener() {
+          				override onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+							// Wait for action confirm to disconnect current device
+							new AlertDialog.Builder(devListActivity)
+                	    	.setTitle("Confirmation")
+                	    	.setMessage("Disconnect with device?")
+                	    	.setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                	    		override onClick(DialogInterface dialog, int which) { 
+                	        		sendBroadcast(new Intent(getString(R.string.ACTION_DISCONNECT)))
+                	        	}
+                	     	})
+                	    	.setIcon(android.R.drawable.ic_dialog_alert)
+                	    	.show()
+							return true
+              			}
+            		})					
+				}
 			} else if (intent.getAction().equals(getString(R.string.ACTION_STOP))) {
 				finish()
 			} 
@@ -96,10 +136,10 @@ import android.widget.ProgressBar
 
 	@OnCreate
     def init(Bundle savedInstanceState) {
+    	connCandidate = null
     	registerReceiver(mServiceActionReceiver, serviceActionIntentFilter())
         queryDevList()
         Log.i(getString(R.string.LOGTAG), "start scan")
-        connCandidate = null
         
         var List<DevElementView> devList = new ArrayList<DevElementView>()
 		var devElem = new DevElementView()
