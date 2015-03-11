@@ -46,6 +46,9 @@ import android.media.Ringtone
 import android.app.PendingIntent
 
 class BLEService extends IntentService {
+	val final int HISTORY_DUMP_PERIOD_COUNT = 12
+	val final int HISTORY_STATS_SECONDS = 300
+	
 	var BluetoothManager mBluetoothManager
     var BluetoothAdapter mBluetoothAdapter
     static public var BluetoothDevice mDevice = null
@@ -228,11 +231,11 @@ class BLEService extends IntentService {
 	override onHandleIntent(Intent intent) {                
     	Log.i(getString(R.string.LOGTAG), "onHandleIntent got intent")    	
     	mPeriodStart = Calendar.getInstance().getTimeInMillis() / 1000L
-    	mPeriodStart = (mPeriodStart / 300) * 300
+    	mPeriodStart = (mPeriodStart / HISTORY_STATS_SECONDS) * HISTORY_STATS_SECONDS
 
     	while (true) {
     		val timeNow = Calendar.getInstance().getTimeInMillis() / 1000L 
-        	if ((timeNow - mPeriodStart) >= 300) {
+        	if ((timeNow - mPeriodStart) >= HISTORY_STATS_SECONDS) {
         		mLock.lock()
         		if (mPeriodTempValid == true) {
         			mTempJson.put(new JSONArray("[" + mPeriodStart + "," + mPeriodTempStart + "," + mPeriodTempMax + "," + mPeriodTempMin + "," + mPeriodTempLast + "]"))
@@ -240,9 +243,9 @@ class BLEService extends IntentService {
         			mTempJson.put(new JSONArray("[" + mPeriodStart + ",null,null,null,null]"))
         		}
         		mPeriodTempValid = false
-        		mPeriodStart += 300
+        		mPeriodStart += HISTORY_STATS_SECONDS
         		// Dump data now
-        		if (mTempJson.length() >= 2) {
+        		if (mTempJson.length() >= HISTORY_DUMP_PERIOD_COUNT) {
         			dumpJsonArray(mTempJson, mPeriodStart)
         			mTempJson = new JSONArray()
         		}
@@ -258,7 +261,7 @@ class BLEService extends IntentService {
     		mReadQueueLock.lock()
         	if (readInProgress == true) {
         		readWaitPeriod++
-        		if (readWaitPeriod > 5) {
+        		if (readWaitPeriod > 5 && mReadGattChar != null) {
         			mGatt?.readCharacteristic(mReadGattChar)
         		}
         	}
@@ -508,11 +511,11 @@ class BLEService extends IntentService {
 			// Check if there is gap between latest record and current one,
 			// fill with null
 			var lastStart = existingJsonArray.getJSONArray(existingJsonArray.length() - 1).getInt(0)
-			if ((lastStart + 300) < periodStart) {
-				lastStart += 300
+			if ((lastStart + HISTORY_STATS_SECONDS) < periodStart) {
+				lastStart += HISTORY_STATS_SECONDS
 				while (lastStart < periodStart) {
 					existingJsonArray.put(new JSONArray("[" + lastStart + ",null,null,null,null]"))
-					lastStart += 300
+					lastStart += HISTORY_STATS_SECONDS
 				}
 			}
 		} else {
