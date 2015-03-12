@@ -30,6 +30,7 @@ import com.google.common.io.CharStreams
 import java.io.InputStreamReader
 import java.io.FileInputStream
 import com.google.common.base.Charsets
+import android.preference.PreferenceManager
 
 @AndroidActivity(R.layout.activity_plot) class PlotActivity {
 	var ExtendedCalendarView calendar
@@ -121,10 +122,11 @@ import com.google.common.base.Charsets
             		vals1.add(new Entry(value, i))
             		valCount++
         		}
+        		val tempType = PreferenceManager?.getDefaultSharedPreferences(this)?.getString("temp_unit_selection", "C_TYPE")
         		for (var i = remain; i < (remain + dataArray.length()) && valCount < count; i++) {
         			var float value
         			if (!dataArray.getJSONArray((i - remain)).isNull(1)) {
-        				value = dataArray.getJSONArray((i - remain)).getDouble(1) as float
+        				value = Utils.getTempType(dataArray.getJSONArray((i - remain)).getDouble(1), tempType) as float
         			} else {
         				value = 0.0f
         			}

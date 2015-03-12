@@ -69,6 +69,17 @@ public class Utils {
 		}
 		return ret;
 	}
+
+	public static double getTempType(double d, String tempUnitCfg) {
+		if (tempUnitCfg.endsWith("F_TYPE")) {
+			// Parse temperature as F
+			d = round((d * 1.8 + 32.0), 1);
+		} else if (tempUnitCfg.endsWith("K_TYPE")) {
+			// Parse temperature as K
+			d = round((d + 273.15), 1);
+		}
+		return d;
+	}
 	
 	public static byte[] parepareBlock(int idx, byte[] b) {
 		byte[] c = new byte[2 + b.length];
