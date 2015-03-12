@@ -69,6 +69,7 @@ class BLEService extends IntentService {
     var double mPeriodTempLast = 0.0
     var boolean mPeriodTempValid = false
     var boolean mServiceRunning = false
+    var String mLogFileName
     var JSONArray mTempJson = null
     var Lock mLock
     var String forceConnectAddress = null
@@ -252,29 +253,53 @@ class BLEService extends IntentService {
     }
     
     def getZoneIndependentTime() {
-    	return (Calendar.getInstance().getTimeInMillis() + Calendar.getInstance().getTimeZone().getOffset(Calendar.getInstance().getTimeInMillis())) / 1000L
+    	var c = Calendar.getInstance()
+        var fn = new String(c.get(Calendar.YEAR) + "_" + (c.get(Calendar.MONTH) + 1) + "_" + c.get(Calendar.DAY_OF_MONTH) + ".json")
+    	var sec = (c.getTimeInMillis() + c.getTimeZone().getOffset(c.getTimeInMillis())) / 1000L
+    	return #[fn, sec]
     }
     
 	override onHandleIntent(Intent intent) {                
     	Log.i(getString(R.string.LOGTAG), "onHandleIntent started") 	    	    	
-    	mPeriodStart = getZoneIndependentTime()
+    	var ret = getZoneIndependentTime()
+    	mLogFileName = ret.get(0) as String
+    	mPeriodStart = ret.get(1) as Long
     	mPeriodStart = (mPeriodStart / HISTORY_STATS_SECONDS) * HISTORY_STATS_SECONDS
+    	Log.i(getString(R.string.LOGTAG), "filename: " + mLogFileName + " period: " + mPeriodStart)
 
     	while (mServiceRunning == true) {
-    		val timeNow = getZoneIndependentTime() 
+    		ret = getZoneIndependentTime()
+    		val timeNow = ret.get(1) as Long
+    		val fnNow = ret.get(0) as String
         	if ((timeNow - mPeriodStart) >= HISTORY_STATS_SECONDS) {
         		mLock.lock()
-        		if (mPeriodTempValid == true) {
-        			mTempJson.put(new JSONArray("[" + mPeriodStart + "," + mPeriodTempStart + "," + mPeriodTempMax + "," + mPeriodTempMin + "," + mPeriodTempLast + "]"))
+        		if (fnNow != mLogFileName) {
+        			// Dump log into mLogFileName, we are crossing middle night
+        			if (mTempJson.length() > 0) {
+        				dumpJsonArray(mTempJson, mLogFileName)
+        				mTempJson = new JSONArray()
+        			}
+        			mLogFileName = fnNow
+        			if (mPeriodTempValid == true) {
+        				mTempJson.put(new JSONArray("[" + mPeriodStart + "," + mPeriodTempStart + "," + mPeriodTempMax + "," + mPeriodTempMin + "," + mPeriodTempLast + "]"))
+        			} else {
+        				mTempJson.put(new JSONArray("[" + mPeriodStart + ",null,null,null,null]"))
+        			}
+        			mPeriodTempValid = false
+        			mPeriodStart += HISTORY_STATS_SECONDS
         		} else {
-        			mTempJson.put(new JSONArray("[" + mPeriodStart + ",null,null,null,null]"))
-        		}
-        		mPeriodTempValid = false
-        		mPeriodStart += HISTORY_STATS_SECONDS
-        		// Dump data now
-        		if (mTempJson.length() >= HISTORY_DUMP_PERIOD_COUNT) {
-        			dumpJsonArray(mTempJson)
-        			mTempJson = new JSONArray()
+        		    if (mPeriodTempValid == true) {
+        				mTempJson.put(new JSONArray("[" + mPeriodStart + "," + mPeriodTempStart + "," + mPeriodTempMax + "," + mPeriodTempMin + "," + mPeriodTempLast + "]"))
+        			} else {
+        				mTempJson.put(new JSONArray("[" + mPeriodStart + ",null,null,null,null]"))
+        			}
+        			mPeriodTempValid = false
+        			mPeriodStart += HISTORY_STATS_SECONDS
+        			// Dump data now
+        			if (mTempJson.length() >= HISTORY_DUMP_PERIOD_COUNT) {
+        				dumpJsonArray(mTempJson, mLogFileName)
+        				mTempJson = new JSONArray()
+        			}	
         		}
         		mLock.unlock()
         	}
@@ -534,11 +559,8 @@ class BLEService extends IntentService {
         }
     }
     
-    def dumpJsonArray(JSONArray jArray) {
+    def dumpJsonArray(JSONArray jArray, String fileName) {
 		var FileOutputStream reportOutput = null
-
-		var c = Calendar.getInstance()
-        var fileName = new String(c.get(Calendar.YEAR) + "_" + (c.get(Calendar.MONTH) + 1) + "_" + c.get(Calendar.DAY_OF_MONTH) + ".json")
     	var fn = new File(folderName + fileName)
 		if (!fn.exists()) {
 			try {
