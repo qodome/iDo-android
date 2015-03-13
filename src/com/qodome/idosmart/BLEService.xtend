@@ -275,16 +275,14 @@ class BLEService extends IntentService {
         		mLock.lock()
         		if (fnNow != mLogFileName) {
         			// Dump log into mLogFileName, we are crossing middle night
-        			if (mTempJson.length() > 0) {
-        				dumpJsonArray(mTempJson, mLogFileName)
-        				mTempJson = new JSONArray()
-        			}
-        			mLogFileName = fnNow
         			if (mPeriodTempValid == true) {
         				mTempJson.put(new JSONArray("[" + mPeriodStart + "," + mPeriodTempStart + "," + mPeriodTempMax + "," + mPeriodTempMin + "," + mPeriodTempLast + "]"))
         			} else {
         				mTempJson.put(new JSONArray("[" + mPeriodStart + ",null,null,null,null]"))
         			}
+        			dumpJsonArray(mTempJson, mLogFileName)
+        			mTempJson = new JSONArray()
+        			mLogFileName = fnNow
         			mPeriodTempValid = false
         			mPeriodStart += HISTORY_STATS_SECONDS
         		} else {
