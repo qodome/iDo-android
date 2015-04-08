@@ -175,6 +175,8 @@ class BLEService extends IntentService {
 			Log.i(getString(R.string.LOGTAG), "BLEService get shutdown request")
 			mServiceRunning = false
 			sendBroadcast(new Intent(getString(R.string.ACTION_STOP)))
+			mGatt?.disconnect()
+            mGatt?.close()
 			stopSelf()
         }
         return super.onStartCommand(intent, flags, startId)
@@ -208,6 +210,8 @@ class BLEService extends IntentService {
         mScanDevMap = new HashMap<String, BluetoothDevice>()
         mScanDevNameList = new ArrayList<String>()
         mScanDevAddrList = new ArrayList<String>()
+        mDevice = null
+    	mGatt = null
     	
     	var intentStop = new Intent(this, typeof(BLEService))
     	intentStop.putExtra("SHUTDOWN", "SHUTDOWN");

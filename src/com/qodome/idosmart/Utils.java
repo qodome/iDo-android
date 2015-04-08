@@ -90,6 +90,6 @@ public class Utils {
 	}
 	
 	public static int getWriteIdx(byte[] b) {
-		return ((int)b[1] << 8) | (int)b[0];
+		return (((int)b[1] << 8) & 0x0000FF00) | ((int)b[0] & 0x000000FF);
 	}
 }
